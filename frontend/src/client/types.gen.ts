@@ -9,6 +9,22 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+/**
+ * Health check response schema.
+ */
+export type HealthCheckResponse = {
+    status: 'healthy' | 'unhealthy';
+    database: 'ok' | 'error';
+    minio: 'ok' | 'error';
+    timestamp: string;
+};
+
+export type status = 'healthy' | 'unhealthy';
+
+export type database = 'ok' | 'error';
+
+export type minio = 'ok' | 'error';
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -161,6 +177,8 @@ export type ValidationError = {
     msg: string;
     type: string;
 };
+
+export type HealthHealthCheckResponse = (HealthCheckResponse);
 
 export type ItemsReadItemsData = {
     limit?: number;

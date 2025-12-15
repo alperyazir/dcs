@@ -77,6 +77,18 @@ class Settings(BaseSettings):
     EMAILS_FROM_EMAIL: EmailStr | None = None
     EMAILS_FROM_NAME: str | None = None
 
+    # MinIO Object Storage
+    MINIO_ENDPOINT: str = "localhost:9000"
+    MINIO_ROOT_USER: str = ""
+    MINIO_ROOT_PASSWORD: str = ""
+    MINIO_USE_SSL: bool = False
+    MINIO_BUCKET_NAME: str = "assets"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def minio_secure(self) -> bool:
+        return self.MINIO_USE_SSL
+
     @model_validator(mode="after")
     def _set_default_emails_from(self) -> Self:
         if not self.EMAILS_FROM_NAME:
