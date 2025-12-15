@@ -182,6 +182,9 @@ services:
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER?Variable not set}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD?Variable not set}
+      # Enable Prometheus metrics without authentication
+      # Access metrics at: http://minio:9000/minio/v2/metrics/cluster
+      - MINIO_PROMETHEUS_AUTH_TYPE=public
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
