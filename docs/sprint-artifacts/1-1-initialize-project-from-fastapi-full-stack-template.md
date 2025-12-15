@@ -204,11 +204,14 @@ git --version
 # 1. Install copier
 pip install copier
 
-# 2. Navigate to parent directory (NOT inside dream-central-storage yet)
-cd /Users/alperyazir/Dev  # Or your preferred location
+# 2. IMPORTANT: Navigate to the project directory
+cd /Users/alperyazir/Dev/dream-central-storage
 
-# 3. Generate project from template
-copier copy https://github.com/fastapi/full-stack-fastapi-template dream-central-storage
+# 3. Generate project from template INTO CURRENT DIRECTORY
+#    NOTE: Use "." to generate into existing directory
+#    The template will add backend/, frontend/, docker-compose.yml etc.
+#    Existing files (docs/, .gitignore) will be preserved
+copier copy https://github.com/fastapi/full-stack-fastapi-template .
 
 # 4. Template will prompt for configuration - use these values:
 #    project_name: Dream Central Storage

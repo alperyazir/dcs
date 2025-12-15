@@ -431,6 +431,44 @@ import type { Asset } from '@/types/asset';  // Types
 
 ### Development Workflow Rules
 
+#### 🚨 MANDATORY: Git Branch Workflow (BEFORE ANY DEVELOPMENT)
+
+**DEV Agent MUST execute these steps at the START of every story:**
+
+```bash
+# Step 1: Check for uncommitted changes
+git status
+
+# Step 2: If changes exist, prompt user to commit or stash
+# DO NOT proceed with uncommitted changes
+
+# Step 3: Ensure on main branch
+git checkout main
+
+# Step 4: Create feature branch for the story
+git checkout -b story/{epic}-{story}-{description}
+# Example: git checkout -b story/1-1-initialize-template
+
+# Step 5: Verify branch created
+git branch --show-current
+# ONLY proceed when on feature branch, NEVER develop on main
+```
+
+**Branch Naming Convention:** `story/{epic}-{story}-{short-description}`
+- `story/1-1-initialize-template`
+- `story/1-2-docker-minio`
+- `story/2-1-jwt-auth`
+
+**After Story Completion:**
+```bash
+git push -u origin story/{epic}-{story}-{description}
+# Then create PR or merge to main
+```
+
+**See:** `/docs/GIT-WORKFLOW.md` for full documentation
+
+---
+
 #### Git Commit Messages
 ```bash
 # ✅ REQUIRED format for all commits
