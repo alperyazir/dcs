@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.core.security import get_password_hash, verify_password
 from app.models import (
@@ -34,7 +34,7 @@ def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
     from datetime import datetime
 
     user_data = user_in.model_dump(exclude_unset=True)
-    extra_data = {"updated_at": datetime.utcnow()}
+    extra_data: dict[str, Any] = {"updated_at": datetime.utcnow()}
     if "password" in user_data:
         password = user_data["password"]
         hashed_password = get_password_hash(password)
@@ -180,7 +180,7 @@ def get_audit_logs_by_user(
     statement = (
         select(AuditLog)
         .where(AuditLog.user_id == user_id)
-        .order_by(AuditLog.timestamp.desc())
+        .order_by(col(AuditLog.timestamp).desc())
         .offset(offset)
         .limit(limit)
     )
@@ -194,7 +194,7 @@ def get_audit_logs_by_asset(
     statement = (
         select(AuditLog)
         .where(AuditLog.asset_id == asset_id)
-        .order_by(AuditLog.timestamp.desc())
+        .order_by(col(AuditLog.timestamp).desc())
         .offset(offset)
         .limit(limit)
     )

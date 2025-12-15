@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 from pydantic import EmailStr
 from sqlalchemy import JSON, CheckConstraint, Column, Index, UniqueConstraint
@@ -248,7 +249,7 @@ class AuditLogBase(SQLModel):
 
     action: AuditAction
     ip_address: str = Field(max_length=45)  # IPv6 max length
-    metadata_json: dict | None = Field(default=None, sa_column=Column(JSON))
+    metadata_json: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
 
 
 class AuditLogCreate(AuditLogBase):
