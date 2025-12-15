@@ -92,7 +92,8 @@ export const ItemCreateSchema = {
     },
     type: 'object',
     required: ['title'],
-    title: 'ItemCreate'
+    title: 'ItemCreate',
+    description: 'Properties to receive on item creation.'
 } as const;
 
 export const ItemPublicSchema = {
@@ -128,7 +129,8 @@ export const ItemPublicSchema = {
     },
     type: 'object',
     required: ['title', 'id', 'owner_id'],
-    title: 'ItemPublic'
+    title: 'ItemPublic',
+    description: 'Properties to return via API.'
 } as const;
 
 export const ItemUpdateSchema = {
@@ -160,7 +162,8 @@ export const ItemUpdateSchema = {
         }
     },
     type: 'object',
-    title: 'ItemUpdate'
+    title: 'ItemUpdate',
+    description: 'Properties to receive on item update.'
 } as const;
 
 export const ItemsPublicSchema = {
@@ -179,7 +182,8 @@ export const ItemsPublicSchema = {
     },
     type: 'object',
     required: ['data', 'count'],
-    title: 'ItemsPublic'
+    title: 'ItemsPublic',
+    description: 'Paginated list of items.'
 } as const;
 
 export const MessageSchema = {
@@ -191,7 +195,8 @@ export const MessageSchema = {
     },
     type: 'object',
     required: ['message'],
-    title: 'Message'
+    title: 'Message',
+    description: 'Generic message response.'
 } as const;
 
 export const NewPasswordSchema = {
@@ -209,7 +214,8 @@ export const NewPasswordSchema = {
     },
     type: 'object',
     required: ['token', 'new_password'],
-    title: 'NewPassword'
+    title: 'NewPassword',
+    description: 'Properties for password reset.'
 } as const;
 
 export const PrivateUserCreateSchema = {
@@ -251,7 +257,8 @@ export const TokenSchema = {
     },
     type: 'object',
     required: ['access_token'],
-    title: 'Token'
+    title: 'Token',
+    description: 'JSON payload containing access token.'
 } as const;
 
 export const UpdatePasswordSchema = {
@@ -271,7 +278,8 @@ export const UpdatePasswordSchema = {
     },
     type: 'object',
     required: ['current_password', 'new_password'],
-    title: 'UpdatePassword'
+    title: 'UpdatePassword',
+    description: 'Properties for password update.'
 } as const;
 
 export const UserCreateSchema = {
@@ -304,16 +312,33 @@ export const UserCreateSchema = {
             ],
             title: 'Full Name'
         },
+        role: {
+            '$ref': '#/components/schemas/UserRole',
+            default: 'student'
+        },
         password: {
             type: 'string',
             maxLength: 128,
             minLength: 8,
             title: 'Password'
+        },
+        tenant_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Tenant Id'
         }
     },
     type: 'object',
     required: ['email', 'password'],
-    title: 'UserCreate'
+    title: 'UserCreate',
+    description: 'Properties to receive via API on user creation.'
 } as const;
 
 export const UserPublicSchema = {
@@ -346,15 +371,42 @@ export const UserPublicSchema = {
             ],
             title: 'Full Name'
         },
+        role: {
+            '$ref': '#/components/schemas/UserRole',
+            default: 'student'
+        },
         id: {
             type: 'string',
             format: 'uuid',
             title: 'Id'
+        },
+        tenant_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Tenant Id'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
         }
     },
     type: 'object',
-    required: ['email', 'id'],
-    title: 'UserPublic'
+    required: ['email', 'id', 'tenant_id', 'created_at', 'updated_at'],
+    title: 'UserPublic',
+    description: 'Properties to return via API.'
 } as const;
 
 export const UserRegisterSchema = {
@@ -386,7 +438,15 @@ export const UserRegisterSchema = {
     },
     type: 'object',
     required: ['email', 'password'],
-    title: 'UserRegister'
+    title: 'UserRegister',
+    description: 'Properties for user self-registration.'
+} as const;
+
+export const UserRoleSchema = {
+    type: 'string',
+    enum: ['admin', 'supervisor', 'publisher', 'school', 'teacher', 'student'],
+    title: 'UserRole',
+    description: 'User roles for role-based access control (RBAC).'
 } as const;
 
 export const UserUpdateSchema = {
@@ -426,6 +486,16 @@ export const UserUpdateSchema = {
             ],
             title: 'Full Name'
         },
+        role: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/UserRole'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
         password: {
             anyOf: [
                 {
@@ -438,10 +508,23 @@ export const UserUpdateSchema = {
                 }
             ],
             title: 'Password'
+        },
+        tenant_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Tenant Id'
         }
     },
     type: 'object',
-    title: 'UserUpdate'
+    title: 'UserUpdate',
+    description: 'Properties to receive via API on user update, all optional.'
 } as const;
 
 export const UserUpdateMeSchema = {
@@ -473,7 +556,8 @@ export const UserUpdateMeSchema = {
         }
     },
     type: 'object',
-    title: 'UserUpdateMe'
+    title: 'UserUpdateMe',
+    description: 'Properties for user to update their own profile.'
 } as const;
 
 export const UsersPublicSchema = {
@@ -492,7 +576,8 @@ export const UsersPublicSchema = {
     },
     type: 'object',
     required: ['data', 'count'],
-    title: 'UsersPublic'
+    title: 'UsersPublic',
+    description: 'Paginated list of users.'
 } as const;
 
 export const ValidationErrorSchema = {
