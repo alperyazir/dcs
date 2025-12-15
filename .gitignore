@@ -1,53 +1,6 @@
-# BMAD Framework Directories (project-specific agent memory and workflows)
-.bmad/
-.bmad-user-memory/
-.claude/
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-.venv
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-htmlcov/
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Node
+.vscode
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-dist/
-build/
-
-# Environment Variables
-.env
-.env.local
-.env.*.local
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Docker
-docker-compose.override.yml
-
-# Logs
-*.log
-logs/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
