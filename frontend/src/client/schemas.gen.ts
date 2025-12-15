@@ -69,6 +69,35 @@ export const HTTPValidationErrorSchema = {
     title: 'HTTPValidationError'
 } as const;
 
+export const HealthCheckResponseSchema = {
+    properties: {
+        status: {
+            type: 'string',
+            enum: ['healthy', 'unhealthy'],
+            title: 'Status'
+        },
+        database: {
+            type: 'string',
+            enum: ['ok', 'error'],
+            title: 'Database'
+        },
+        minio: {
+            type: 'string',
+            enum: ['ok', 'error'],
+            title: 'Minio'
+        },
+        timestamp: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Timestamp'
+        }
+    },
+    type: 'object',
+    required: ['status', 'database', 'minio', 'timestamp'],
+    title: 'HealthCheckResponse',
+    description: 'Health check response schema.'
+} as const;
+
 export const ItemCreateSchema = {
     properties: {
         title: {
