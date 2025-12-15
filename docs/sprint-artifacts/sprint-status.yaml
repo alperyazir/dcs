@@ -1,0 +1,117 @@
+# generated: 2025-12-15
+# project: dream-central-storage
+# project_key: dream-central-storage
+# tracking_system: file-system
+# story_location: /Users/alperyazir/Dev/dream-central-storage/docs/sprint-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - drafted: Story file created in stories folder
+#   - ready-for-dev: Draft approved and story context created
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - completed: Retrospective has been done
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically drafts next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2025-12-15
+project: dream-central-storage
+project_key: dream-central-storage
+tracking_system: file-system
+story_location: /Users/alperyazir/Dev/dream-central-storage/docs/sprint-artifacts
+
+development_status:
+  epic-1: in-progress
+  1-1-initialize-project-from-fastapi-full-stack-template: ready-for-dev
+  1-2-configure-docker-compose-with-minio-and-traefik-services: backlog
+  1-3-set-up-core-database-models-and-migrations-framework: backlog
+  1-4-implement-health-check-and-system-status-endpoints: backlog
+  1-5-configure-monitoring-logging-and-metrics-exposure: backlog
+  1-6-set-up-ci-cd-pipeline-with-github-actions: backlog
+  1-7-configure-https-security-headers-and-encryption: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-implement-jwt-authentication-with-login-and-token-generation: backlog
+  2-2-implement-role-based-authorization-middleware: backlog
+  2-3-implement-multi-tenant-database-isolation-with-row-level-security: backlog
+  2-4-implement-rate-limiting-per-user-role: backlog
+  2-5-implement-user-management-endpoints-for-admin-supervisor: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-implement-single-file-upload-with-progress-tracking: backlog
+  3-2-generate-time-limited-signed-urls-for-direct-minio-access: backlog
+  3-3-implement-zip-archive-upload-with-streaming-extraction: backlog
+  3-4-implement-file-type-and-size-validation: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-implement-asset-download-with-signed-urls: backlog
+  4-2-implement-video-and-audio-streaming-with-http-range-support: backlog
+  4-3-implement-asset-preview-endpoints: backlog
+  4-4-implement-batch-download-for-multiple-assets: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-implement-soft-delete-to-trash: backlog
+  5-2-implement-restore-from-trash: backlog
+  5-3-implement-asset-versioning-on-updates: backlog
+  5-4-implement-folder-organization-with-prefix-structure: backlog
+  5-5-implement-asset-metadata-display: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-implement-asset-search-by-metadata-fields: backlog
+  6-2-implement-asset-filtering-by-type-and-owner: backlog
+  6-3-implement-asset-library-with-visual-previews: backlog
+  6-4-implement-role-specific-asset-browsing: backlog
+  epic-6-retrospective: optional
+
+  epic-7: backlog
+  7-1-implement-restful-api-with-standardized-error-responses: backlog
+  7-2-implement-multipart-upload-for-large-files: backlog
+  7-3-implement-lms-assignment-permission-api: backlog
+  7-4-implement-config-json-download-for-flowbook-integration: backlog
+  7-5-implement-api-versioning: backlog
+  7-6-implement-comprehensive-api-documentation: backlog
+  epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-implement-immutable-audit-logging-for-all-actions: backlog
+  8-2-implement-compliance-reporting-and-audit-log-access: backlog
+  8-3-implement-configurable-data-retention-policies: backlog
+  8-4-implement-file-integrity-verification-with-checksums: backlog
+  8-5-implement-user-data-purging-on-account-deletion: backlog
+  epic-8-retrospective: optional
+
+  epic-9: backlog
+  9-1-set-up-react-frontend-with-shadcn-ui-and-tailwind-css: backlog
+  9-2-implement-authentication-ui-with-login-and-role-based-routing: backlog
+  9-3-implement-asset-upload-zone-with-drag-and-drop: backlog
+  9-4-implement-asset-browser-with-table-view-and-previews: backlog
+  9-5-implement-video-player-with-http-range-support: backlog
+  9-6-implement-multi-file-upload-progress-tracker: backlog
+  9-7-implement-responsive-design-for-mobile-and-tablet: backlog
+  9-8-implement-accessibility-features-wcag-2-1-level-aa: backlog
+  epic-9-retrospective: optional
