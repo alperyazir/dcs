@@ -42,7 +42,7 @@ story_location: /Users/alperyazir/Dev/dream-central-storage/docs/sprint-artifact
 
 development_status:
   epic-1: in-progress
-  1-1-initialize-project-from-fastapi-full-stack-template: ready-for-dev
+  1-1-initialize-project-from-fastapi-full-stack-template: in-progress
   1-2-configure-docker-compose-with-minio-and-traefik-services: backlog
   1-3-set-up-core-database-models-and-migrations-framework: backlog
   1-4-implement-health-check-and-system-status-endpoints: backlog
