@@ -1,6 +1,6 @@
 # Story 1.2: Configure Docker Compose with MinIO and Traefik Services
 
-Status: review
+Status: done
 
 ## Story
 
