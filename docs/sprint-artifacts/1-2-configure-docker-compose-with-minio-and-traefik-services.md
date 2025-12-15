@@ -125,12 +125,15 @@ Claude Opus 4.5
 
 **Created:**
 - `.env.example` - Environment template with MinIO variables
-- `scripts/init-minio.sh` - Standalone bucket initialization script
 - `docs/sprint-artifacts/1-2-configure-docker-compose-with-minio-and-traefik-services.md` - This story file
 
 **Modified:**
 - `docker-compose.yml` - Added MinIO service, volume, and backend MinIO dependency
-- `docker-compose.override.yml` - Added MinIO dev overrides and minio-init service
+- `docker-compose.override.yml` - Added MinIO dev overrides and minio-init service with bucket policy
 - `.env` - Added MinIO credentials (not committed)
 - `.gitignore` - Added .env patterns
 - `development.md` - Added MinIO documentation section
+
+### Tech Debt
+
+- **MinIO Integration Test:** Add backend integration test to verify MinIO connectivity with configured credentials. Currently validated manually via docker compose logs.

@@ -108,6 +108,7 @@ services:
       - .env
     environment:
       - MINIO_HOST=minio:9000
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-assets}
     entrypoint: >
       /bin/sh -c "
       echo 'Waiting for MinIO...';
@@ -115,13 +116,15 @@ services:
         echo 'MinIO not ready, retrying...';
         sleep 2;
       done;
-      echo 'Creating assets bucket...';
-      mc mb local/assets --ignore-existing;
+      echo 'Creating bucket $$MINIO_BUCKET_NAME...';
+      mc mb local/$$MINIO_BUCKET_NAME --ignore-existing;
       echo 'Enabling versioning...';
-      mc version enable local/assets;
+      mc version enable local/$$MINIO_BUCKET_NAME;
+      echo 'Setting bucket policy (private, authenticated access only)...';
+      mc anonymous set none local/$$MINIO_BUCKET_NAME;
       echo 'Verifying configuration...';
       mc ls local/;
-      mc version info local/assets;
+      mc version info local/$$MINIO_BUCKET_NAME;
       echo 'MinIO initialization complete!';
       "
 
