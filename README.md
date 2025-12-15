@@ -1,8 +1,7 @@
-# Full Stack FastAPI Template
+# Dream Central Storage
 
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3A%22Test+Docker+Compose%22" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test%20Docker%20Compose/badge.svg" alt="Test Docker Compose"></a>
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3A%22Test+Backend%22" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test%20Backend/badge.svg" alt="Test Backend"></a>
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/fastapi/full-stack-fastapi-template" target="_blank"><img src="https://coverage-badge.samuelcolvin.workers.dev/fastapi/full-stack-fastapi-template.svg" alt="Coverage"></a>
+[![PR Checks](https://github.com/alperyazir/dream-central-storage/actions/workflows/pr.yml/badge.svg)](https://github.com/alperyazir/dream-central-storage/actions/workflows/pr.yml)
+[![Build and Deploy](https://github.com/alperyazir/dream-central-storage/actions/workflows/deploy.yml/badge.svg)](https://github.com/alperyazir/dream-central-storage/actions/workflows/deploy.yml)
 
 ## Technology Stack and Features
 
@@ -223,6 +222,56 @@ Deployment docs: [deployment.md](./deployment.md).
 General development docs: [development.md](./development.md).
 
 This includes using Docker Compose, custom local domains, `.env` configurations, etc.
+
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment.
+
+### Workflows
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| PR Checks (`pr.yml`) | Pull requests to `main` | Runs linting and tests |
+| Build and Deploy (`deploy.yml`) | Push to `main` | Builds images and deploys |
+
+### Branch Protection Rules
+
+To enforce code quality, configure branch protection for `main`:
+
+1. Go to **Settings > Branches > Branch protection rules**
+2. Add rule for `main` branch:
+   - **Require status checks to pass before merging**: Enable
+   - **Required status checks**: `lint`, `test`
+   - **Require branches to be up to date before merging**: Enable
+
+### Required GitHub Secrets
+
+Configure these secrets in **Settings > Secrets and variables > Actions**:
+
+| Secret | Description | Required For |
+|--------|-------------|--------------|
+| `VPS_HOST` | VPS IP address or hostname | Deployment |
+| `VPS_USER` | SSH username for deployment | Deployment |
+| `VPS_SSH_KEY` | Private SSH key (ed25519 recommended) | Deployment |
+
+**Note:** `GITHUB_TOKEN` is automatically available and provides ghcr.io push access.
+
+### Optional Variables
+
+Configure these in **Settings > Secrets and variables > Actions > Variables**:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DEPLOY_PATH` | Path to project on VPS | `/opt/dream-central-storage` |
+| `VITE_API_URL` | API URL for frontend build | `https://api.example.com` |
+
+### First-Time VPS Setup
+
+1. Create deploy user with SSH key authentication
+2. Install Docker and Docker Compose
+3. Clone repository to deployment path
+4. Copy `.env.example` to `.env` and configure
+5. Run initial `docker compose up -d`
 
 ## Release Notes
 
