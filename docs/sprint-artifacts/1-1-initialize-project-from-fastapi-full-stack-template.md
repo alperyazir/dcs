@@ -53,6 +53,39 @@ so that I have a production-ready foundation with all necessary tooling configur
 
 ## Dev Notes
 
+### ⚠️ GIT WORKFLOW - READ BEFORE STARTING
+
+**MANDATORY: Create Feature Branch Before Implementation**
+
+```bash
+# 1. Check for uncommitted changes in current directory
+git status
+
+# 2. If changes exist, commit them first
+git add . && git commit -m "Prepare for Story 1.1"
+
+# 3. Ensure you're on main branch
+git checkout main
+
+# 4. Create feature branch for this story
+git checkout -b story/1-1-initialize-template
+
+# 5. Verify branch
+git branch --show-current  # Should show: story/1-1-initialize-template
+
+# 6. NOW you can start implementation
+```
+
+**Branch Naming:** `story/1-1-initialize-template`
+**Full Workflow Guide:** See `/docs/GIT-WORKFLOW.md`
+
+**After Story Completion:**
+- Push branch: `git push -u origin story/1-1-initialize-template`
+- Create PR or merge to main
+- Delete feature branch after merge
+
+---
+
 ### 🎯 Critical Success Factors
 
 **This is Story 1.1 - the foundation for the entire project. Everything else depends on getting this right!**
