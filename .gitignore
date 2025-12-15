@@ -1,6 +1,13 @@
 .vscode
 node_modules/
 
+# Environment files (NEVER commit secrets)
+.env
+.env.*
+!.env.example
+*.env.local
+*.env.*.local
+
 # BMAD framework (local development tools)
 .bmad/
 .claude/
