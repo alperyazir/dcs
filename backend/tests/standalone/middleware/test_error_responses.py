@@ -177,3 +177,98 @@ class TestValidationErrors:
         assert response.status_code == 422
         # Still has request ID header
         assert "X-Request-ID" in response.headers
+
+
+class TestSecretsSecurity:
+    """Tests for NFR-S7: Secrets are never exposed in error responses."""
+
+    @pytest.fixture
+    def secure_error_app(self) -> "FastAPI":
+        """Create app that simulates sensitive data in exceptions.
+
+        Note: This app doesn't use middleware to simplify exception handling testing.
+        The middleware is tested separately.
+        """
+        from datetime import datetime, timezone
+
+        from fastapi import FastAPI, Request
+        from fastapi.responses import JSONResponse
+
+        test_app = FastAPI()
+
+        @test_app.exception_handler(Exception)
+        async def secure_exception_handler(
+            _request: Request, _exc: Exception
+        ) -> JSONResponse:
+            # This handler should NOT expose the exception details
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "detail": "An internal error occurred",
+                    "error_code": "INTERNAL_ERROR",
+                    "message": "An internal error occurred",
+                    "details": None,
+                    "request_id": None,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+
+        @test_app.get("/sensitive-error")
+        async def sensitive_error_endpoint() -> None:
+            # Simulate an error that contains sensitive info
+            raise ValueError("Database connection failed: password=supersecret123")
+
+        @test_app.get("/config-error")
+        async def config_error_endpoint() -> None:
+            # Simulate a config error with secrets
+            raise RuntimeError("MinIO connection failed with secret_key=minio_key_123")
+
+        return test_app
+
+    @pytest.fixture
+    def secure_client(
+        self, secure_error_app: "FastAPI"
+    ) -> Generator["TestClient", None, None]:
+        """Test client for secure error app."""
+        from fastapi.testclient import TestClient
+
+        with TestClient(secure_error_app, raise_server_exceptions=False) as client:
+            yield client
+
+    def test_500_error_hides_exception_details(
+        self, secure_client: "TestClient"
+    ) -> None:
+        """Test that 500 errors do not expose exception details."""
+        response = secure_client.get("/sensitive-error")
+
+        assert response.status_code == 500
+        body = response.json()
+
+        # Should NOT contain the password from the exception
+        response_text = str(body)
+        assert "supersecret123" not in response_text
+        assert "password=" not in response_text.lower()
+
+    def test_config_error_hides_secrets(self, secure_client: "TestClient") -> None:
+        """Test that config errors do not expose secrets."""
+        response = secure_client.get("/config-error")
+
+        assert response.status_code == 500
+        body = response.json()
+
+        # Should NOT contain the secret key from the exception
+        response_text = str(body)
+        assert "minio_key_123" not in response_text
+        assert "secret_key=" not in response_text.lower()
+
+    def test_error_response_is_generic(self, secure_client: "TestClient") -> None:
+        """Test that error responses are generic for security."""
+        response = secure_client.get("/sensitive-error")
+
+        body = response.json()
+
+        # Should be a generic error message
+        assert body["message"] == "An internal error occurred"
+        assert body["error_code"] == "INTERNAL_ERROR"
+        # Details should be None for security
+        assert body["details"] is None

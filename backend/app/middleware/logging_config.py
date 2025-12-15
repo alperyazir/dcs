@@ -4,13 +4,62 @@ Provides:
 - JSONFormatter: Custom formatter that outputs logs as JSON
 - setup_logging: Configure the root logger with JSON formatting
 - Context injection for request_id, user_id, and custom context
+- Secrets redaction to prevent sensitive data leakage (NFR-S7)
 """
 
 import json
 import logging
+import re
 import sys
 from datetime import datetime, timezone
 from typing import Any
+
+# Patterns for sensitive data that should be redacted from logs
+# These patterns match common secret formats in log messages
+SENSITIVE_PATTERNS = [
+    # Password patterns: password=xxx, password: xxx, "password": "xxx"
+    r'password["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+    # Secret patterns
+    r'secret[_-]?key["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+    r'secret["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+    # Token patterns
+    r'token["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+    r'access[_-]?token["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+    # API key patterns
+    r'api[_-]?key["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+    # Authorization header
+    r'authorization["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+    # Bearer tokens (JWT format)
+    r"Bearer\s+[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+",
+    # MinIO/AWS credentials
+    r'minio[_-]?(root[_-])?password["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+    r'aws[_-]?secret[_-]?access[_-]?key["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+    # Database passwords
+    r'postgres[_-]?password["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+    # Encryption keys
+    r'encryption[_-]?key["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+    r'kms[_-]?secret[_-]?key["\']?\s*[:=]\s*["\']?[^"\'}\s,]+["\']?',
+]
+
+# Compile patterns for efficiency
+_compiled_patterns = [re.compile(p, re.IGNORECASE) for p in SENSITIVE_PATTERNS]
+
+
+def redact_secrets(message: str) -> str:
+    """Redact sensitive information from log messages.
+
+    This function scans log messages for common secret patterns
+    and replaces them with [REDACTED] to prevent credential leakage.
+
+    Args:
+        message: The log message to redact
+
+    Returns:
+        Message with sensitive information replaced by [REDACTED]
+    """
+    for pattern in _compiled_patterns:
+        message = pattern.sub("[REDACTED]", message)
+    return message
 
 
 class JSONFormatter(logging.Formatter):
@@ -29,15 +78,15 @@ class JSONFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
-        """Format log record as JSON string."""
-        # Build the log entry
+        """Format log record as JSON string with secrets redaction."""
+        # Build the log entry with secrets redacted from message
         log_entry: dict[str, Any] = {
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[
                 :-3
             ]
             + "Z",
             "level": record.levelname,
-            "message": record.getMessage(),
+            "message": redact_secrets(record.getMessage()),
         }
 
         # Add optional fields from extra
@@ -51,8 +100,11 @@ class JSONFormatter(logging.Formatter):
             log_entry["context"] = record.context
 
         # Add exception info if present (for ERROR/CRITICAL with exc_info)
+        # Also redact secrets from exception tracebacks
         if record.exc_info:
-            log_entry["exception"] = self.formatException(record.exc_info)
+            log_entry["exception"] = redact_secrets(
+                self.formatException(record.exc_info)
+            )
 
         return json.dumps(log_entry)
 
@@ -65,17 +117,17 @@ class TextFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
-        """Format log record as human-readable text."""
+        """Format log record as human-readable text with secrets redaction."""
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         request_id = getattr(record, "request_id", "-")
 
-        base_msg = (
-            f"{timestamp} | {record.levelname:8} | [{request_id}] {record.getMessage()}"
-        )
+        # Redact secrets from message
+        message = redact_secrets(record.getMessage())
+        base_msg = f"{timestamp} | {record.levelname:8} | [{request_id}] {message}"
 
-        # Add exception info if present
+        # Add exception info if present (also redacted)
         if record.exc_info:
-            base_msg += f"\n{self.formatException(record.exc_info)}"
+            base_msg += f"\n{redact_secrets(self.formatException(record.exc_info))}"
 
         return base_msg
 

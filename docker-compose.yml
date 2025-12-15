@@ -40,6 +40,8 @@ services:
       - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.entrypoints=https
       - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls=true
       - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls.certresolver=le
+      # Apply security headers middleware to HTTPS router
+      - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.middlewares=security-headers
       - traefik.http.services.${STACK_NAME?Variable not set}-adminer.loadbalancer.server.port=8080
 
   prestart:
@@ -138,6 +140,8 @@ services:
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.entrypoints=https
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls=true
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls.certresolver=le
+      # Apply security headers middleware to HTTPS router
+      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.middlewares=security-headers
 
       # Enable redirection for HTTP and HTTPS
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.middlewares=https-redirect
@@ -167,6 +171,8 @@ services:
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=https
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=le
+      # Apply security headers middleware to HTTPS router
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.middlewares=security-headers
 
       # Enable redirection for HTTP and HTTPS
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.middlewares=https-redirect
@@ -185,6 +191,9 @@ services:
       # Enable Prometheus metrics without authentication
       # Access metrics at: http://minio:9000/minio/v2/metrics/cluster
       - MINIO_PROMETHEUS_AUTH_TYPE=public
+      # Server-Side Encryption (SSE-S3 with AES-256) - NFR-S6
+      # Format: key-name:base64-encoded-key
+      - MINIO_KMS_SECRET_KEY=${MINIO_KMS_SECRET_KEY_NAME:-dream-storage-key}:${MINIO_KMS_SECRET_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -206,6 +215,8 @@ services:
       - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.entrypoints=https
       - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.tls=true
       - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.tls.certresolver=le
+      # Apply security headers middleware to HTTPS router
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.middlewares=security-headers
       - traefik.http.services.${STACK_NAME?Variable not set}-minio.loadbalancer.server.port=9000
       # MinIO Console
       - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-http.rule=Host(`minio-console.${DOMAIN?Variable not set}`)
@@ -215,6 +226,8 @@ services:
       - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.entrypoints=https
       - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.tls=true
       - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.tls.certresolver=le
+      # Apply security headers middleware to HTTPS router
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.middlewares=security-headers
       - traefik.http.services.${STACK_NAME?Variable not set}-minio-console.loadbalancer.server.port=9001
 
 volumes:

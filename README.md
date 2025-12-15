@@ -223,6 +223,26 @@ General development docs: [development.md](./development.md).
 
 This includes using Docker Compose, custom local domains, `.env` configurations, etc.
 
+### Development vs Production
+
+| Configuration | Command | Description |
+|--------------|---------|-------------|
+| **Development** | `docker compose up` | HTTP only, uses `docker-compose.override.yml` |
+| **Production** | `docker compose -f docker-compose.yml -f docker-compose.traefik.yml up` | Full HTTPS with Let's Encrypt, TLS 1.3, security headers |
+
+**Development mode** (`docker compose up`):
+- Automatic reload enabled
+- Services exposed on localhost ports (backend:8000, frontend:5173, etc.)
+- No HTTPS (HTTP only)
+- Debug logging enabled
+
+**Production mode**:
+- Requires `EMAIL` variable for Let's Encrypt notifications
+- Requires `USERNAME` and `HASHED_PASSWORD` for Traefik dashboard auth
+- HTTPS with automatic certificate renewal
+- TLS 1.3 minimum enforced
+- Security headers applied to all responses
+
 ## CI/CD Pipeline
 
 This project uses GitHub Actions for continuous integration and deployment.
@@ -272,6 +292,65 @@ Configure these in **Settings > Secrets and variables > Actions > Variables**:
 3. Clone repository to deployment path
 4. Copy `.env.example` to `.env` and configure
 5. Run initial `docker compose up -d`
+
+## Security Configuration
+
+This project implements comprehensive security features for production deployments.
+
+### HTTPS and TLS
+
+- **Automatic HTTPS**: Traefik obtains Let's Encrypt certificates automatically
+- **HTTP to HTTPS Redirect**: All HTTP traffic is redirected to HTTPS
+- **TLS 1.3 Minimum**: Only TLS 1.3 connections are accepted (configured in `traefik/dynamic/tls.yml`)
+
+### Security Headers
+
+All HTTPS responses include the following security headers:
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME type sniffing |
+| `X-Frame-Options` | `SAMEORIGIN` | Prevents clickjacking |
+| `X-XSS-Protection` | `1; mode=block` | Legacy XSS protection |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains; preload` | Enforces HTTPS |
+| `Content-Security-Policy` | Configured for React SPA | Prevents XSS attacks |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Controls referrer info |
+
+### MinIO Encryption at Rest
+
+MinIO is configured with Server-Side Encryption (SSE-S3 with AES-256):
+
+1. **Generate encryption key**:
+   ```bash
+   openssl rand -base64 32
+   ```
+
+2. **Configure in `.env`**:
+   ```env
+   MINIO_KMS_SECRET_KEY_NAME=dream-storage-key
+   MINIO_KMS_SECRET_KEY=<your-generated-key>
+   ```
+
+3. **Verify encryption**:
+   ```bash
+   # Using MinIO client
+   docker compose exec minio mc alias set local http://localhost:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
+   docker compose exec minio mc encrypt info local/assets
+   ```
+
+**Warning**: Store your encryption key securely. Losing the key means losing access to encrypted data.
+
+### Secrets Management
+
+- All sensitive values use environment variables (never hardcoded)
+- Use `SecretStr` in Pydantic settings to prevent accidental logging
+- Secrets are redacted from log output
+
+Required secrets to configure:
+- `SECRET_KEY`: JWT signing key
+- `POSTGRES_PASSWORD`: Database password
+- `MINIO_ROOT_PASSWORD`: MinIO admin password
+- `MINIO_KMS_SECRET_KEY`: Encryption key for MinIO SSE-S3
 
 ## Release Notes
 

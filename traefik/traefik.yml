@@ -1,0 +1,13 @@
+# Traefik Static Configuration for Dream Central Storage
+# This file provides static configuration that cannot be set via Docker labels
+#
+# Note: Most Traefik configuration is done via command-line arguments in docker-compose.
+# This file is primarily for TLS options that require file provider.
+#
+# The dynamic configuration in ./dynamic/tls.yml enforces TLS 1.3 minimum.
+
+# File provider for dynamic configuration (TLS options)
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
