@@ -1,8 +1,44 @@
 # Python
 __pycache__
-app.egg-info
 *.pyc
+*.pyo
+*.pyd
+.Python
+app.egg-info
+*.egg-info
+*.egg
+
+# Virtual environments
+.venv
+venv
+ENV
+
+# Testing and coverage
 .mypy_cache
+.pytest_cache
 .coverage
 htmlcov
-.venv
+coverage.xml
+.tox
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Local development
+.env.local
+*.log
+
+# Tests (not needed in production image)
+tests
