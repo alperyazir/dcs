@@ -139,16 +139,16 @@
 
 // Accessible form input
 <label htmlFor="email">Email *</label>
-<input 
-  id="email" 
-  aria-required="true" 
+<input
+  id="email"
+  aria-required="true"
   aria-describedby="email-help"
 />
 <span id="email-help">We'll never share your email</span>
 
 // Skip link (hidden until focused)
-<a 
-  href="#main-content" 
+<a
+  href="#main-content"
   className="sr-only focus:not-sr-only focus:absolute focus:top-4"
 >
   Skip to main content
