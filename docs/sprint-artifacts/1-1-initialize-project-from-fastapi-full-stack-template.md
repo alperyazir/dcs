@@ -1,6 +1,6 @@
 # Story 1.1: Initialize Project from FastAPI Full Stack Template
 
-Status: ready-for-dev
+Status: Done
 
 ## Story
 
@@ -21,35 +21,35 @@ so that I have a production-ready foundation with all necessary tooling configur
 
 ## Tasks / Subtasks
 
-- [ ] Install copier and initialize project from template (AC: 1)
-  - [ ] Install copier: `pip install copier`
-  - [ ] Run template generation: `copier copy https://github.com/fastapi/full-stack-fastapi-template dream-central-storage`
-  - [ ] Configure template prompts with project-specific values
+- [x] Install copier and initialize project from template (AC: 1)
+  - [x] Install copier: `pip install copier`
+  - [x] Run template generation: `copier copy https://github.com/fastapi/full-stack-fastapi-template .` (generated into existing directory)
+  - [x] Configure template prompts with project-specific values
 
-- [ ] Verify project structure generation (AC: 2, 3)
-  - [ ] Confirm backend/ directory with FastAPI structure
-  - [ ] Confirm frontend/ directory with React + TypeScript structure
-  - [ ] Verify docker-compose.yml with backend, frontend, db services
+- [x] Verify project structure generation (AC: 2, 3)
+  - [x] Confirm backend/ directory with FastAPI structure
+  - [x] Confirm frontend/ directory with React + TypeScript structure
+  - [x] Verify docker-compose.yml with backend, frontend, db services
 
-- [ ] Configure environment variables (AC: 6)
-  - [ ] Review .env.example file
-  - [ ] Create .env file with development values
-  - [ ] Ensure secure secret_key generation
-  - [ ] Set postgres_password
-  - [ ] Configure first_superuser email
+- [x] Configure environment variables (AC: 6)
+  - [x] Review .env.example file
+  - [x] Create .env file with development values
+  - [x] Ensure secure secret_key generation (64-char hex via openssl rand -hex 32)
+  - [x] Set postgres_password (secure random via openssl rand -hex 16)
+  - [x] Configure first_superuser email (admin@example.com)
 
-- [ ] Verify development environment startup (AC: 7)
-  - [ ] Run `docker-compose up`
-  - [ ] Confirm PostgreSQL starts successfully
-  - [ ] Confirm backend API starts on expected port
-  - [ ] Confirm frontend dev server starts
-  - [ ] Access API docs at /docs to verify OpenAPI generation
+- [x] Verify development environment startup (AC: 7)
+  - [x] Run `docker-compose up`
+  - [x] Confirm PostgreSQL starts successfully (port 5433 externally to avoid LMS conflict)
+  - [x] Confirm backend API starts on expected port (8000)
+  - [x] Confirm frontend dev server starts (5173)
+  - [x] Access API docs at /docs to verify OpenAPI generation (HTTP 200)
 
-- [ ] Verify pre-commit hooks (AC: 5)
-  - [ ] Confirm .pre-commit-config.yaml exists
-  - [ ] Install hooks: `pre-commit install`
-  - [ ] Test ruff (Python linting)
-  - [ ] Test prettier (TypeScript/JavaScript formatting)
+- [x] Verify pre-commit hooks (AC: 5)
+  - [x] Confirm .pre-commit-config.yaml exists
+  - [x] Install hooks: `pre-commit install`
+  - [x] Test ruff (Python linting) - All checks passed
+  - [x] Test biome (TypeScript/JavaScript formatting - replaced prettier in template)
 
 ## Dev Notes
 
@@ -391,30 +391,79 @@ The FastAPI Full Stack Template provides a battle-tested, production-ready found
 
 ### Agent Model Used
 
-_To be filled by dev agent_
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
-_To be filled by dev agent during implementation_
+**Issues Encountered & Resolved:**
+
+1. **Port Conflict (5432):** PostgreSQL port 5432 was already in use by LMS application.
+   - **Resolution:** Modified `docker-compose.override.yml` to map external port to 5433 (`5433:5432`)
+
+2. **Python Version Mismatch:** Backend Dockerfile used Python 3.10, but code uses `datetime.UTC` (Python 3.11+)
+   - **Resolution:** Updated `backend/Dockerfile` from `python:3.10` to `python:3.11`
+
+3. **Copier Template .git Conflict:** Initial copier run modified .git directory, causing detached HEAD
+   - **Resolution:** Used `--exclude .git` flag on subsequent copier run
 
 ### Completion Notes List
 
-_To be filled by dev agent:_
-- [ ] Template initialized successfully
-- [ ] All services verified running
-- [ ] API documentation accessible
-- [ ] Pre-commit hooks installed and tested
-- [ ] .env file configured appropriately
-- [ ] Project structure matches expected layout
+_Implementation completed successfully:_
+- [x] Template initialized successfully (FastAPI Full Stack Template v0.9.0)
+- [x] All services verified running (db, backend, frontend, proxy, adminer, mailcatcher)
+- [x] API documentation accessible at http://localhost:8000/docs (HTTP 200)
+- [x] Pre-commit hooks installed and tested (ruff for Python, biome for TypeScript)
+- [x] .env file configured with secure secrets (openssl rand generated keys)
+- [x] Project structure matches expected layout
+- [x] All 55 backend tests pass (pytest)
+- [x] Feature branch created: `story/1-1-initialize-template`
 
 ### File List
 
-_To be filled by dev agent - list all files created by template (key files):_
-- backend/app/main.py
-- backend/app/api/main.py
-- backend/app/models/ (directory)
-- frontend/src/main.tsx
-- docker-compose.yml
-- .env
-- .pre-commit-config.yaml
-- (Template creates 50+ files total)
+**Key files created/modified by template and implementation:**
+
+**Configuration:**
+- .env (environment variables with secure secrets)
+- .pre-commit-config.yaml (ruff + biome hooks)
+- docker-compose.yml (service orchestration)
+- docker-compose.override.yml (local dev config, PostgreSQL port 5433)
+- .gitignore (updated by template)
+- .copier/.copier-answers.yml (copier configuration)
+
+**Backend:**
+- backend/Dockerfile (Python 3.11)
+- backend/app/main.py (FastAPI entry point)
+- backend/app/api/main.py (API router)
+- backend/app/api/routes/ (login, users, items, utils, private)
+- backend/app/core/ (config, db, security)
+- backend/app/models.py (SQLModel ORM)
+- backend/app/crud.py (database operations)
+- backend/app/alembic/ (migrations)
+- backend/tests/ (55 tests)
+- backend/pyproject.toml (uv package config)
+
+**Frontend:**
+- frontend/src/main.tsx (React entry point)
+- frontend/src/components/ (UI, Admin, Items, UserSettings, etc.)
+- frontend/src/routes/ (TanStack Router pages)
+- frontend/src/client/ (Auto-generated OpenAPI client)
+- frontend/src/hooks/ (useAuth, useCustomToast, etc.)
+- frontend/package.json (npm dependencies)
+- frontend/Dockerfile (multi-stage build)
+- frontend/biome.json (linting config)
+
+**CI/CD:**
+- .github/workflows/ (test-backend, lint-backend, playwright, deploy, etc.)
+
+**Documentation:**
+- README.md (template documentation)
+- development.md (local development guide)
+- deployment.md (production deployment guide)
+
+_(Template created 150+ files total)_
+
+### Change Log
+
+| Date | Change | Author |
+|------|--------|--------|
+| 2025-12-15 | Story 1.1 implementation complete | Claude Opus 4.5 |
