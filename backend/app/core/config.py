@@ -84,6 +84,10 @@ class Settings(BaseSettings):
     MINIO_USE_SSL: bool = False
     MINIO_BUCKET_NAME: str = "assets"
 
+    # Logging Configuration
+    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+    LOG_FORMAT: Literal["json", "text"] = "json"
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def minio_secure(self) -> bool:
