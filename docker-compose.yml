@@ -85,6 +85,8 @@ services:
       db:
         condition: service_healthy
         restart: true
+      minio:
+        condition: service_healthy
       prestart:
         condition: service_completed_successfully
     env_file:
@@ -107,6 +109,12 @@ services:
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - SENTRY_DSN=${SENTRY_DSN}
+      # MinIO Object Storage
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER?Variable not set}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD?Variable not set}
+      - MINIO_USE_SSL=${MINIO_USE_SSL:-false}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-assets}
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
@@ -162,8 +170,53 @@ services:
 
       # Enable redirection for HTTP and HTTPS
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.middlewares=https-redirect
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-13T22-19-12Z
+    restart: always
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    env_file:
+      - .env
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER?Variable not set}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD?Variable not set}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - traefik-public
+      - default
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # MinIO API (S3)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-http.rule=Host(`minio.${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-http.entrypoints=http
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-http.middlewares=https-redirect
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.rule=Host(`minio.${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.entrypoints=https
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.tls=true
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-https.tls.certresolver=le
+      - traefik.http.services.${STACK_NAME?Variable not set}-minio.loadbalancer.server.port=9000
+      # MinIO Console
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-http.rule=Host(`minio-console.${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-http.entrypoints=http
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-http.middlewares=https-redirect
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.rule=Host(`minio-console.${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.entrypoints=https
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.tls=true
+      - traefik.http.routers.${STACK_NAME?Variable not set}-minio-console-https.tls.certresolver=le
+      - traefik.http.services.${STACK_NAME?Variable not set}-minio-console.loadbalancer.server.port=9001
+
 volumes:
   app-db-data:
+  minio-data:
 
 networks:
   traefik-public:

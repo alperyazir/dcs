@@ -46,6 +46,75 @@ This is useful for:
 
 The backend is automatically configured to use Mailcatcher when running with Docker Compose locally (SMTP on port 1025). All captured emails can be viewed at <http://localhost:1080>.
 
+## MinIO Object Storage
+
+MinIO provides S3-compatible object storage for asset management. It's automatically configured when you start the Docker Compose stack.
+
+### Accessing MinIO
+
+* **MinIO Console**: <http://localhost:9001> - Web UI for managing buckets and objects
+* **MinIO API**: <http://localhost:9000> - S3-compatible API endpoint
+
+### Default Credentials
+
+The default credentials are set in your `.env` file:
+
+```dotenv
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=<your-password>
+```
+
+**Important**: For production, always generate secure credentials with `openssl rand -hex 32`.
+
+### Assets Bucket
+
+When the stack starts, the `minio-init` service automatically:
+
+1. Creates the `assets` bucket
+2. Enables versioning (required for soft delete/restore functionality)
+
+You can verify this in the MinIO console or via logs:
+
+```bash
+docker compose logs minio-init
+```
+
+### Using MinIO in Development
+
+The backend is configured with these environment variables:
+
+```dotenv
+MINIO_ENDPOINT=minio:9000
+MINIO_ROOT_USER=${MINIO_ROOT_USER}
+MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+MINIO_USE_SSL=false
+MINIO_BUCKET_NAME=assets
+```
+
+### Manual Bucket Operations
+
+To manually run bucket operations, you can use the MinIO Client (mc):
+
+```bash
+# Enter the minio container
+docker compose exec minio sh
+
+# Or use the minio/mc image directly
+docker run --rm -it --network dream-central-storage_default minio/mc sh
+
+# Set up alias
+mc alias set local http://minio:9000 minioadmin <your-password>
+
+# List buckets
+mc ls local/
+
+# Check versioning status
+mc version info local/assets
+
+# Upload a test file
+mc cp /path/to/file local/assets/
+```
+
 ## Local Development
 
 The Docker Compose files are configured so that each of the services is available in a different port in `localhost`.
@@ -200,6 +269,10 @@ Traefik UI: <http://localhost:8090>
 
 MailCatcher: <http://localhost:1080>
 
+MinIO Console: <http://localhost:9001>
+
+MinIO API: <http://localhost:9000>
+
 ### Development URLs with `localhost.tiangolo.com` Configured
 
 Development URLs, for local development.
@@ -217,3 +290,7 @@ Adminer: <http://localhost.tiangolo.com:8080>
 Traefik UI: <http://localhost.tiangolo.com:8090>
 
 MailCatcher: <http://localhost.tiangolo.com:1080>
+
+MinIO Console: <http://minio-console.localhost.tiangolo.com>
+
+MinIO API: <http://minio.localhost.tiangolo.com>
