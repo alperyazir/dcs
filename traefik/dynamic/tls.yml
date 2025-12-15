@@ -1,0 +1,8 @@
+# TLS Configuration for Dream Central Storage
+# Enforces TLS 1.3 minimum for all HTTPS connections (NFR-S5)
+
+tls:
+  options:
+    default:
+      minVersion: VersionTLS13
+      sniStrict: true

@@ -409,3 +409,151 @@ class TestSanitizeQuery:
         result = middleware._sanitize_query("page=1&limit=50&sort=name")
 
         assert result == "page=1&limit=50&sort=name"
+
+
+class TestSecretsRedaction:
+    """Tests for secrets redaction in log messages (NFR-S7)."""
+
+    def test_redact_password_patterns(self) -> None:
+        """Test that password patterns are redacted."""
+        from app.middleware.logging_config import redact_secrets
+
+        test_cases = [
+            ("password=secret123", "[REDACTED]"),
+            ("password: secret123", "[REDACTED]"),
+            ('"password": "secret123"', "[REDACTED]"),
+            ("password='secret123'", "[REDACTED]"),
+        ]
+
+        for input_str, _ in test_cases:
+            result = redact_secrets(input_str)
+            assert "secret123" not in result, f"Password not redacted in: {input_str}"
+            assert "[REDACTED]" in result
+
+    def test_redact_token_patterns(self) -> None:
+        """Test that token patterns are redacted."""
+        from app.middleware.logging_config import redact_secrets
+
+        test_cases = [
+            "token=abc123xyz",
+            "access_token=xyz789",
+            '"token": "mytoken"',
+        ]
+
+        for input_str in test_cases:
+            result = redact_secrets(input_str)
+            assert "[REDACTED]" in result
+
+    def test_redact_bearer_jwt(self) -> None:
+        """Test that Bearer JWT tokens are redacted."""
+        from app.middleware.logging_config import redact_secrets
+
+        # Standard JWT format: header.payload.signature
+        jwt = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+        result = redact_secrets(jwt)
+
+        assert "eyJ" not in result
+        assert "[REDACTED]" in result
+
+    def test_redact_database_password(self) -> None:
+        """Test that database passwords are redacted."""
+        from app.middleware.logging_config import redact_secrets
+
+        input_str = "postgres_password=supersecretpassword"
+        result = redact_secrets(input_str)
+
+        assert "supersecretpassword" not in result
+        assert "[REDACTED]" in result
+
+    def test_redact_minio_password(self) -> None:
+        """Test that MinIO passwords are redacted."""
+        from app.middleware.logging_config import redact_secrets
+
+        input_str = "minio_root_password=miniosecret"
+        result = redact_secrets(input_str)
+
+        assert "miniosecret" not in result
+        assert "[REDACTED]" in result
+
+    def test_redact_api_keys(self) -> None:
+        """Test that API keys are redacted."""
+        from app.middleware.logging_config import redact_secrets
+
+        input_str = "api_key=sk-1234567890abcdef"
+        result = redact_secrets(input_str)
+
+        assert "sk-1234567890abcdef" not in result
+        assert "[REDACTED]" in result
+
+    def test_redact_encryption_keys(self) -> None:
+        """Test that encryption keys are redacted."""
+        from app.middleware.logging_config import redact_secrets
+
+        input_str = "kms_secret_key=base64encryptionkey"
+        result = redact_secrets(input_str)
+
+        assert "base64encryptionkey" not in result
+        assert "[REDACTED]" in result
+
+    def test_preserves_safe_content(self) -> None:
+        """Test that non-sensitive content is preserved."""
+        from app.middleware.logging_config import redact_secrets
+
+        safe_messages = [
+            "Request completed successfully",
+            "User logged in: user@example.com",
+            "Processing 100 items",
+            "Database connection established",
+        ]
+
+        for msg in safe_messages:
+            result = redact_secrets(msg)
+            assert result == msg
+
+    def test_json_formatter_redacts_secrets(self) -> None:
+        """Test that JSONFormatter redacts secrets from messages."""
+        import logging
+        from io import StringIO
+
+        from app.middleware.logging_config import JSONFormatter
+
+        stream = StringIO()
+        handler = logging.StreamHandler(stream)
+        handler.setFormatter(JSONFormatter())
+
+        logger = logging.getLogger("test_json_redact")
+        logger.setLevel(logging.DEBUG)
+        logger.handlers.clear()
+        logger.addHandler(handler)
+
+        # Log a message with sensitive data
+        logger.info("Connection with password=supersecret established")
+        stream.seek(0)
+        output = stream.read()
+
+        assert "supersecret" not in output
+        assert "[REDACTED]" in output
+
+    def test_text_formatter_redacts_secrets(self) -> None:
+        """Test that TextFormatter redacts secrets from messages."""
+        import logging
+        from io import StringIO
+
+        from app.middleware.logging_config import TextFormatter
+
+        stream = StringIO()
+        handler = logging.StreamHandler(stream)
+        handler.setFormatter(TextFormatter())
+
+        logger = logging.getLogger("test_text_redact")
+        logger.setLevel(logging.DEBUG)
+        logger.handlers.clear()
+        logger.addHandler(handler)
+
+        # Log a message with sensitive data
+        logger.info("Config loaded with secret_key=mysecretkey")
+        stream.seek(0)
+        output = stream.read()
+
+        assert "mysecretkey" not in output
+        assert "[REDACTED]" in output
