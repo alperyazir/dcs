@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from datetime import UTC, datetime
+from collections.abc import Callable
+from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Response
@@ -42,8 +43,8 @@ def check_minio_health() -> Literal["ok", "error"]:
 
 
 async def check_with_timeout(
-    func: callable,
-    timeout: float,  # type: ignore[valid-type]
+    func: Callable[[], Literal["ok", "error"]],
+    timeout: float,
 ) -> Literal["ok", "error"]:
     """Run a sync function in executor with timeout."""
     loop = asyncio.get_running_loop()
@@ -93,5 +94,5 @@ async def health_check(response: Response) -> HealthCheckResponse:
         status=overall_status,
         database=db_status,
         minio=minio_status,
-        timestamp=datetime.now(UTC),
+        timestamp=datetime.now(timezone.utc),
     )
