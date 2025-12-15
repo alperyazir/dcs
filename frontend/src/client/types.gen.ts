@@ -13,11 +13,17 @@ export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
+/**
+ * Properties to receive on item creation.
+ */
 export type ItemCreate = {
     title: string;
     description?: (string | null);
 };
 
+/**
+ * Properties to return via API.
+ */
 export type ItemPublic = {
     title: string;
     description?: (string | null);
@@ -25,20 +31,32 @@ export type ItemPublic = {
     owner_id: string;
 };
 
+/**
+ * Paginated list of items.
+ */
 export type ItemsPublic = {
     data: Array<ItemPublic>;
     count: number;
 };
 
+/**
+ * Properties to receive on item update.
+ */
 export type ItemUpdate = {
     title?: (string | null);
     description?: (string | null);
 };
 
+/**
+ * Generic message response.
+ */
 export type Message = {
     message: string;
 };
 
+/**
+ * Properties for password reset.
+ */
 export type NewPassword = {
     token: string;
     new_password: string;
@@ -51,51 +69,88 @@ export type PrivateUserCreate = {
     is_verified?: boolean;
 };
 
+/**
+ * JSON payload containing access token.
+ */
 export type Token = {
     access_token: string;
     token_type?: string;
 };
 
+/**
+ * Properties for password update.
+ */
 export type UpdatePassword = {
     current_password: string;
     new_password: string;
 };
 
+/**
+ * Properties to receive via API on user creation.
+ */
 export type UserCreate = {
     email: string;
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
+    role?: UserRole;
     password: string;
+    tenant_id?: (string | null);
 };
 
+/**
+ * Properties to return via API.
+ */
 export type UserPublic = {
     email: string;
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
+    role?: UserRole;
     id: string;
+    tenant_id: (string | null);
+    created_at: string;
+    updated_at: string;
 };
 
+/**
+ * Properties for user self-registration.
+ */
 export type UserRegister = {
     email: string;
     password: string;
     full_name?: (string | null);
 };
 
+/**
+ * User roles for role-based access control (RBAC).
+ */
+export type UserRole = 'admin' | 'supervisor' | 'publisher' | 'school' | 'teacher' | 'student';
+
+/**
+ * Paginated list of users.
+ */
 export type UsersPublic = {
     data: Array<UserPublic>;
     count: number;
 };
 
+/**
+ * Properties to receive via API on user update, all optional.
+ */
 export type UserUpdate = {
     email?: (string | null);
     is_active?: boolean;
     is_superuser?: boolean;
     full_name?: (string | null);
+    role?: (UserRole | null);
     password?: (string | null);
+    tenant_id?: (string | null);
 };
 
+/**
+ * Properties for user to update their own profile.
+ */
 export type UserUpdateMe = {
     full_name?: (string | null);
     email?: (string | null);

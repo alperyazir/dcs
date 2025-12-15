@@ -44,7 +44,7 @@ development_status:
   epic-1: in-progress
   1-1-initialize-project-from-fastapi-full-stack-template: done
   1-2-configure-docker-compose-with-minio-and-traefik-services: done
-  1-3-set-up-core-database-models-and-migrations-framework: backlog
+  1-3-set-up-core-database-models-and-migrations-framework: done
   1-4-implement-health-check-and-system-status-endpoints: backlog
   1-5-configure-monitoring-logging-and-metrics-exposure: backlog
   1-6-set-up-ci-cd-pipeline-with-github-actions: backlog
