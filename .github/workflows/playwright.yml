@@ -31,7 +31,7 @@ jobs:
           changed:
             - backend/**
             - frontend/**
-            - .env
+            - .env.example
             - docker-compose*.yml
             - .github/workflows/playwright.yml
 
@@ -68,9 +68,18 @@ jobs:
       working-directory: backend
     - run: npm ci
       working-directory: frontend
+    - name: Create .env file from example
+      run: cp .env.example .env
     - run: uv run bash scripts/generate-client.sh
       env:
         VIRTUAL_ENV: backend/.venv
+        # Required for OpenAPI generation (backend settings validation)
+        PROJECT_NAME: "Dream Central Storage"
+        POSTGRES_SERVER: localhost
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: testpassword
+        FIRST_SUPERUSER: admin@example.com
+        FIRST_SUPERUSER_PASSWORD: testpassword
     - run: docker compose build
     - run: docker compose down -v --remove-orphans
     - name: Run Playwright tests

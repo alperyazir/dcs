@@ -39,8 +39,13 @@ jobs:
     - run: uv run bash scripts/generate-client.sh
       env:
         VIRTUAL_ENV: backend/.venv
+        # Required for OpenAPI generation (backend settings validation)
+        PROJECT_NAME: "Dream Central Storage"
         SECRET_KEY: just-for-generating-client
+        POSTGRES_SERVER: localhost
+        POSTGRES_USER: postgres
         POSTGRES_PASSWORD: just-for-generating-client
+        FIRST_SUPERUSER: admin@example.com
         FIRST_SUPERUSER_PASSWORD: just-for-generating-client
     - name: Add changes to git
       run: |
