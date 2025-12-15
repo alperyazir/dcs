@@ -8,6 +8,7 @@ from pydantic import (
     EmailStr,
     HttpUrl,
     PostgresDsn,
+    SecretStr,
     computed_field,
     model_validator,
 )
@@ -53,7 +54,8 @@ class Settings(BaseSettings):
     POSTGRES_SERVER: str
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str
-    POSTGRES_PASSWORD: str = ""
+    # Use SecretStr to prevent accidental logging of password (NFR-S7)
+    POSTGRES_PASSWORD: SecretStr = SecretStr("")
     POSTGRES_DB: str = ""
 
     @computed_field  # type: ignore[prop-decorator]
@@ -62,7 +64,7 @@ class Settings(BaseSettings):
         return PostgresDsn.build(
             scheme="postgresql+psycopg",
             username=self.POSTGRES_USER,
-            password=self.POSTGRES_PASSWORD,
+            password=self.POSTGRES_PASSWORD.get_secret_value(),
             host=self.POSTGRES_SERVER,
             port=self.POSTGRES_PORT,
             path=self.POSTGRES_DB,
@@ -80,7 +82,8 @@ class Settings(BaseSettings):
     # MinIO Object Storage
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ROOT_USER: str = ""
-    MINIO_ROOT_PASSWORD: str = ""
+    # Use SecretStr to prevent accidental logging of password (NFR-S7)
+    MINIO_ROOT_PASSWORD: SecretStr = SecretStr("")
     MINIO_USE_SSL: bool = False
     MINIO_BUCKET_NAME: str = "assets"
 
@@ -110,8 +113,14 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
 
-    def _check_default_secret(self, var_name: str, value: str | None) -> None:
-        if value == "changethis":
+    def _check_default_secret(
+        self, var_name: str, value: str | SecretStr | None
+    ) -> None:
+        # Handle SecretStr by extracting the actual value
+        actual_value = (
+            value.get_secret_value() if isinstance(value, SecretStr) else value
+        )
+        if actual_value == "changethis":
             message = (
                 f'The value of {var_name} is "changethis", '
                 "for security, please change it, at least for deployments."

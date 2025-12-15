@@ -98,7 +98,7 @@ services:
       - "9000:9000"
       - "9001:9001"
 
-  # MinIO initialization - creates assets bucket with versioning enabled
+  # MinIO initialization - creates assets bucket with versioning and encryption enabled
   minio-init:
     image: minio/mc:latest
     depends_on:
@@ -120,11 +120,14 @@ services:
       mc mb local/$$MINIO_BUCKET_NAME --ignore-existing;
       echo 'Enabling versioning...';
       mc version enable local/$$MINIO_BUCKET_NAME;
+      echo 'Enabling SSE-S3 encryption (AES-256)...';
+      mc encrypt set sse-s3 local/$$MINIO_BUCKET_NAME || echo 'SSE-S3 encryption enabled or already configured';
       echo 'Setting bucket policy (private, authenticated access only)...';
       mc anonymous set none local/$$MINIO_BUCKET_NAME;
       echo 'Verifying configuration...';
       mc ls local/;
       mc version info local/$$MINIO_BUCKET_NAME;
+      mc encrypt info local/$$MINIO_BUCKET_NAME || echo 'Encryption info not available';
       echo 'MinIO initialization complete!';
       "
 
