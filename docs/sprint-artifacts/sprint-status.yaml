@@ -52,7 +52,7 @@ development_status:
   epic-1-retrospective: optional
 
   epic-2: in-progress
-  2-1-implement-jwt-authentication-with-login-and-token-generation: review
+  2-1-implement-jwt-authentication-with-login-and-token-generation: done
   2-2-implement-role-based-authorization-middleware: backlog
   2-3-implement-multi-tenant-database-isolation-with-row-level-security: backlog
   2-4-implement-rate-limiting-per-user-role: backlog

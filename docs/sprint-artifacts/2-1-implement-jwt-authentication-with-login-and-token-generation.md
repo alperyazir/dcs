@@ -1,6 +1,6 @@
 # Story 2.1: Implement JWT Authentication with Login and Token Generation
 
-Status: review
+Status: done
 
 ## Story
 
