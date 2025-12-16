@@ -1,8 +1,22 @@
+"""
+FastAPI Dependencies for Dream Central Storage.
+
+Provides:
+- Database session management
+- JWT authentication
+- Tenant context injection (Story 2.3)
+
+References:
+- AC: #1 (middleware injects tenant_id into session context)
+- AC: #9 (tenant_id from request.state used for filtering)
+"""
+
 from collections.abc import Generator
 from typing import Annotated
+from uuid import UUID
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
@@ -11,6 +25,7 @@ from sqlmodel import Session
 from app.core import security
 from app.core.config import settings
 from app.core.db import engine
+from app.core.tenant_context import clear_tenant_context, set_tenant_context
 from app.models import TokenPayload, User
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -25,6 +40,65 @@ def get_db() -> Generator[Session, None, None]:
 
 SessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
+
+
+def get_tenant_session(request: Request) -> Generator[Session, None, None]:
+    """
+    Get database session with tenant context injected from request.state.
+
+    This dependency:
+    1. Creates a database session
+    2. Sets tenant context from request.state (populated by TenantContextMiddleware)
+    3. Sets PostgreSQL session parameter for RLS (Task 6)
+    4. Clears tenant context on completion (prevents context leakage)
+
+    The tenant context enables:
+    - TenantAwareRepository to automatically filter by tenant_id
+    - PostgreSQL RLS policies to enforce tenant isolation as backstop
+
+    References:
+        - AC: #1 (middleware injects tenant_id into session context)
+        - AC: #7 (RLS policies serve as backstop defense layer)
+        - AC: #9 (tenant_id from request.state used for filtering)
+
+    Args:
+        request: FastAPI Request with state populated by TenantContextMiddleware
+
+    Yields:
+        Session: SQLModel session with tenant context set
+    """
+    from sqlalchemy import text
+
+    # Extract tenant context from request.state (set by TenantContextMiddleware)
+    user_id = getattr(request.state, "user_id", None)
+    tenant_id = getattr(request.state, "tenant_id", None)
+    bypass = getattr(request.state, "bypass_tenant_filter", False)
+
+    # Convert string IDs to UUID if present
+    user_uuid = UUID(user_id) if user_id else None
+    tenant_uuid = UUID(tenant_id) if tenant_id else None
+
+    # Set the tenant context for this request (for TenantAwareRepository)
+    set_tenant_context(user_id=user_uuid, tenant_id=tenant_uuid, bypass=bypass)
+
+    try:
+        with Session(engine) as session:
+            # Set PostgreSQL session parameter for RLS (Task 6)
+            # Empty string bypasses RLS (for Admin/Supervisor or unauthenticated)
+            if bypass or tenant_uuid is None:
+                session.execute(text("SET LOCAL app.current_tenant_id = ''"))
+            else:
+                session.execute(
+                    text("SET LOCAL app.current_tenant_id = :tenant_id"),
+                    {"tenant_id": str(tenant_uuid)},
+                )
+            yield session
+    finally:
+        # Always clear context to prevent leakage between requests
+        clear_tenant_context()
+
+
+TenantSessionDep = Annotated[Session, Depends(get_tenant_session)]
 
 
 def get_current_user(session: SessionDep, token: TokenDep) -> User:
