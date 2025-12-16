@@ -1,6 +1,6 @@
 # Story 2.2: Implement Role-Based Authorization Middleware
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 
