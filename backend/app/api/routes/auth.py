@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.deps import SessionDep
+from app.core.config import settings
 from app.middleware.rate_limit import get_client_ip, limiter
 from app.middleware.request_id import get_request_id
 from app.models import RefreshTokenRequest, TokenResponse
@@ -37,8 +38,13 @@ def get_auth_service(session: SessionDep) -> AuthService:
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 
+def get_login_rate_limit() -> str:
+    """Get configurable login rate limit."""
+    return settings.RATE_LIMIT_LOGIN
+
+
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("5/minute")
+@limiter.limit(get_login_rate_limit)
 async def login(
     request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -49,7 +55,7 @@ async def login(
 
     Accepts email/password and returns access + refresh tokens.
 
-    **Rate Limited:** 5 attempts per minute per IP (AC: #8)
+    **Rate Limited:** Configurable via RATE_LIMIT_LOGIN (default: 5/minute per IP)
 
     - **username**: User's email address
     - **password**: User's password
