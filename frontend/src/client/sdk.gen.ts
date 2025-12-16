@@ -12,7 +12,7 @@ export class AuthService {
      *
      * Accepts email/password and returns access + refresh tokens.
      *
-     * **Rate Limited:** 5 attempts per minute per IP (AC: #8)
+     * **Rate Limited:** Configurable via RATE_LIMIT_LOGIN (default: 5/minute per IP)
      *
      * - **username**: User's email address
      * - **password**: User's password
@@ -96,6 +96,8 @@ export class ItemsService {
     /**
      * Read Items
      * Retrieve items.
+     *
+     * Rate limited based on user role (Story 2.4).
      * @param data The data for the request.
      * @param data.skip
      * @param data.limit
@@ -119,6 +121,8 @@ export class ItemsService {
     /**
      * Create Item
      * Create new item.
+     *
+     * Rate limited based on user role (Story 2.4).
      * @param data The data for the request.
      * @param data.requestBody
      * @returns ItemPublic Successful Response
@@ -139,6 +143,8 @@ export class ItemsService {
     /**
      * Read Item
      * Get item by ID.
+     *
+     * Rate limited based on user role (Story 2.4).
      * @param data The data for the request.
      * @param data.id
      * @returns ItemPublic Successful Response
@@ -160,6 +166,8 @@ export class ItemsService {
     /**
      * Update Item
      * Update an item.
+     *
+     * Rate limited based on user role (Story 2.4).
      * @param data The data for the request.
      * @param data.id
      * @param data.requestBody
@@ -184,6 +192,8 @@ export class ItemsService {
     /**
      * Delete Item
      * Delete an item.
+     *
+     * Rate limited based on user role (Story 2.4).
      * @param data The data for the request.
      * @param data.id
      * @returns Message Successful Response
@@ -328,6 +338,7 @@ export class UsersService {
      * Retrieve users.
      *
      * Requires Admin role (Story 2.2, AC: #9).
+     * Rate limited based on user role - Admins have unlimited access (Story 2.4).
      * @param data The data for the request.
      * @param data.skip
      * @param data.limit
@@ -353,6 +364,7 @@ export class UsersService {
      * Create new user.
      *
      * Requires Admin role (Story 2.2, AC: #9).
+     * Rate limited based on user role - Admins have unlimited access (Story 2.4).
      * @param data The data for the request.
      * @param data.requestBody
      * @returns UserPublic Successful Response
@@ -373,6 +385,8 @@ export class UsersService {
     /**
      * Read User Me
      * Get current user.
+     *
+     * Rate limited based on user role (Story 2.4).
      * @returns UserPublic Successful Response
      * @throws ApiError
      */
@@ -386,6 +400,8 @@ export class UsersService {
     /**
      * Delete User Me
      * Delete own user.
+     *
+     * Rate limited based on user role (Story 2.4).
      * @returns Message Successful Response
      * @throws ApiError
      */
@@ -399,6 +415,8 @@ export class UsersService {
     /**
      * Update User Me
      * Update own user.
+     *
+     * Rate limited based on user role (Story 2.4).
      * @param data The data for the request.
      * @param data.requestBody
      * @returns UserPublic Successful Response
@@ -419,6 +437,8 @@ export class UsersService {
     /**
      * Update Password Me
      * Update own password.
+     *
+     * Rate limited based on user role (Story 2.4).
      * @param data The data for the request.
      * @param data.requestBody
      * @returns Message Successful Response
@@ -439,6 +459,8 @@ export class UsersService {
     /**
      * Register User
      * Create new user without the need to be logged in.
+     *
+     * Rate limited by IP to prevent abuse (configurable via RATE_LIMIT_SIGNUP).
      * @param data The data for the request.
      * @param data.requestBody
      * @returns UserPublic Successful Response
@@ -459,6 +481,8 @@ export class UsersService {
     /**
      * Read User By Id
      * Get a specific user by id.
+     *
+     * Rate limited based on user role (Story 2.4).
      * @param data The data for the request.
      * @param data.userId
      * @returns UserPublic Successful Response
@@ -482,6 +506,7 @@ export class UsersService {
      * Update a user.
      *
      * Requires Admin role (Story 2.2, AC: #9).
+     * Rate limited based on user role - Admins have unlimited access (Story 2.4).
      * @param data The data for the request.
      * @param data.userId
      * @param data.requestBody
@@ -508,6 +533,7 @@ export class UsersService {
      * Delete a user.
      *
      * Requires Admin role (Story 2.2, AC: #9).
+     * Rate limited based on user role - Admins have unlimited access (Story 2.4).
      * @param data The data for the request.
      * @param data.userId
      * @returns Message Successful Response
