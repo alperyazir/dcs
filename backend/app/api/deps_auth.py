@@ -50,12 +50,13 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
         current_user: Injected authenticated user
 
     Returns:
-        User if admin
+        User if admin or superuser
 
     Raises:
-        PermissionDeniedException: If not admin (AC: #9)
+        PermissionDeniedException: If not admin/superuser (AC: #9)
     """
-    if current_user.role != UserRole.ADMIN:
+    # Accept both role=ADMIN and is_superuser=True for backward compatibility
+    if current_user.role != UserRole.ADMIN and not current_user.is_superuser:
         raise PermissionDeniedException(
             user_id=current_user.id,
             resource_type="admin_endpoint",

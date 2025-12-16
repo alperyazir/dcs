@@ -340,15 +340,26 @@ class TestAuthorizationDependencies:
         from app.api.deps_auth import require_admin
 
         admin = self._create_mock_user(UserRole.ADMIN)
+        admin.is_superuser = False
         result = require_admin(current_user=admin)
         assert result == admin
 
+    def test_require_admin_passes_superuser(self):
+        """require_admin allows superusers for backward compatibility."""
+        from app.api.deps_auth import require_admin
+
+        superuser = self._create_mock_user(UserRole.STUDENT)
+        superuser.is_superuser = True
+        result = require_admin(current_user=superuser)
+        assert result == superuser
+
     def test_require_admin_blocks_non_admin(self):
-        """require_admin raises PermissionDeniedException for non-admin."""
+        """require_admin raises PermissionDeniedException for non-admin/non-superuser."""
         from app.api.deps_auth import require_admin
         from app.core.exceptions import PermissionDeniedException
 
         teacher = self._create_mock_user(UserRole.TEACHER)
+        teacher.is_superuser = False
         with pytest.raises(PermissionDeniedException) as exc_info:
             require_admin(current_user=teacher)
         assert exc_info.value.status_code == 403
