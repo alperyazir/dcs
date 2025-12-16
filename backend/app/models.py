@@ -355,16 +355,37 @@ class Message(SQLModel):
 
 
 class Token(SQLModel):
-    """JSON payload containing access token."""
+    """JSON payload containing access token (legacy, for backward compatibility)."""
 
     access_token: str
     token_type: str = "bearer"
 
 
-class TokenPayload(SQLModel):
-    """Contents of JWT token."""
+class TokenResponse(SQLModel):
+    """Full token response with access and refresh tokens (AC: #1, #7)."""
 
-    sub: str | None = None
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int  # Seconds until access token expires
+
+
+class RefreshTokenRequest(SQLModel):
+    """Request body for token refresh endpoint (AC: #7)."""
+
+    refresh_token: str
+
+
+class TokenPayload(SQLModel):
+    """Contents of JWT token payload (AC: #9)."""
+
+    sub: str | None = None  # user_id
+    email: str | None = None
+    role: str | None = None
+    tenant_id: str | None = None
+    exp: int | None = None  # Expiry timestamp
+    iat: int | None = None  # Issued at timestamp
+    type: str | None = None  # "access" or "refresh"
 
 
 class NewPassword(SQLModel):

@@ -7,7 +7,12 @@ node_modules/
 !.env.example
 *.env.local
 *.env.*.local
+
+# RSA Keys (NEVER commit private keys)
+keys/
+*.pem
 .mcp.json
+.serena/**
 
 # BMAD framework (local development tools)
 .bmad/

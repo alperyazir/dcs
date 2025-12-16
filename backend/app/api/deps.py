@@ -28,16 +28,65 @@ TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
 def get_current_user(session: SessionDep, token: TokenDep) -> User:
+    """
+    Validate JWT access token and return current user.
+
+    Uses RS256 public key for verification (AC: #5, #6, #10).
+    Validates all required claims: sub, email, role, tenant_id (AC: #7.3).
+    Returns 401 for expired or invalid tokens.
+    """
     try:
         payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+            token,
+            settings.JWT_PUBLIC_KEY,
+            algorithms=[security.ALGORITHM],
         )
         token_data = TokenPayload(**payload)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except (InvalidTokenError, ValidationError):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Validate all required claims (AC: #7.3)
+    if not token_data.sub:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: missing user ID",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not token_data.email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: missing email",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not token_data.role:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: missing role",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not token_data.tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: missing tenant ID",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if token_data.type != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: not an access token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     user = session.get(User, token_data.sub)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

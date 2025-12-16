@@ -1,4 +1,5 @@
 """Tests for multi-tenant models: Tenant, Asset, AuditLog."""
+
 import uuid
 
 from sqlmodel import Session
