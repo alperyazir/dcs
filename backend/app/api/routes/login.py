@@ -36,9 +36,15 @@ def login_access_token(
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    # Handle nullable tenant_id - use user.id as fallback for single-tenant mode
+    effective_tenant_id = user.tenant_id if user.tenant_id else user.id
     return Token(
         access_token=security.create_access_token(
-            user.id, expires_delta=access_token_expires
+            user_id=user.id,
+            email=user.email,
+            role=user.role.value,
+            tenant_id=effective_tenant_id,
+            expires_delta=access_token_expires,
         )
     )
 
