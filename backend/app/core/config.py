@@ -97,6 +97,16 @@ class Settings(BaseSettings):
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     LOG_FORMAT: Literal["json", "text"] = "json"
 
+    # Rate Limiting Configuration (Story 2.4)
+    # Format: "X/second", "X/minute", "X/hour", "X/day"
+    RATE_LIMIT_PUBLISHER: str = "1000/hour"
+    RATE_LIMIT_SCHOOL: str = "1000/hour"
+    RATE_LIMIT_TEACHER: str = "500/hour"
+    RATE_LIMIT_STUDENT: str = "100/hour"
+    RATE_LIMIT_DEFAULT: str = "100/hour"  # For unauthenticated requests
+    RATE_LIMIT_LOGIN: str = "5/minute"  # Brute force protection
+    RATE_LIMIT_SIGNUP: str = "10/minute"  # Signup abuse protection
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def minio_secure(self) -> bool:

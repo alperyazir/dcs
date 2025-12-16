@@ -1,21 +1,29 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
+from app.middleware.rate_limit import get_dynamic_rate_limit, limiter
 from app.models import Item, ItemCreate, ItemPublic, ItemsPublic, ItemUpdate, Message
 
 router = APIRouter(prefix="/items", tags=["items"])
 
 
 @router.get("/", response_model=ItemsPublic)
+@limiter.limit(get_dynamic_rate_limit)
 def read_items(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    session: SessionDep,
+    current_user: CurrentUser,
+    skip: int = 0,
+    limit: int = 100,
 ) -> Any:
     """
     Retrieve items.
+
+    Rate limited based on user role (Story 2.4).
     """
 
     if current_user.is_superuser:
@@ -42,9 +50,17 @@ def read_items(
 
 
 @router.get("/{id}", response_model=ItemPublic)
-def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+@limiter.limit(get_dynamic_rate_limit)
+def read_item(
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    session: SessionDep,
+    current_user: CurrentUser,
+    id: uuid.UUID,
+) -> Any:
     """
     Get item by ID.
+
+    Rate limited based on user role (Story 2.4).
     """
     item = session.get(Item, id)
     if not item:
@@ -55,11 +71,18 @@ def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> 
 
 
 @router.post("/", response_model=ItemPublic)
+@limiter.limit(get_dynamic_rate_limit)
 def create_item(
-    *, session: SessionDep, current_user: CurrentUser, item_in: ItemCreate
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    item_in: ItemCreate,
 ) -> Any:
     """
     Create new item.
+
+    Rate limited based on user role (Story 2.4).
     """
     item = Item.model_validate(item_in, update={"owner_id": current_user.id})
     session.add(item)
@@ -69,7 +92,9 @@ def create_item(
 
 
 @router.put("/{id}", response_model=ItemPublic)
+@limiter.limit(get_dynamic_rate_limit)
 def update_item(
+    request: Request,  # noqa: ARG001 - Required by rate limiter
     *,
     session: SessionDep,
     current_user: CurrentUser,
@@ -78,6 +103,8 @@ def update_item(
 ) -> Any:
     """
     Update an item.
+
+    Rate limited based on user role (Story 2.4).
     """
     item = session.get(Item, id)
     if not item:
@@ -93,11 +120,17 @@ def update_item(
 
 
 @router.delete("/{id}")
+@limiter.limit(get_dynamic_rate_limit)
 def delete_item(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    session: SessionDep,
+    current_user: CurrentUser,
+    id: uuid.UUID,
 ) -> Message:
     """
     Delete an item.
+
+    Rate limited based on user role (Story 2.4).
     """
     item = session.get(Item, id)
     if not item:

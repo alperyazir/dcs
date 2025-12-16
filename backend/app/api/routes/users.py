@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import col, delete, func, select
 
 from app import crud
@@ -13,6 +13,7 @@ from app.api.deps import (
 from app.api.deps_auth import require_admin
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
+from app.middleware.rate_limit import get_dynamic_rate_limit, limiter
 from app.models import (
     Item,
     Message,
@@ -35,11 +36,18 @@ router = APIRouter(prefix="/users", tags=["users"])
     dependencies=[Depends(get_current_active_superuser), Depends(require_admin)],
     response_model=UsersPublic,
 )
-def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
+@limiter.limit(get_dynamic_rate_limit)
+def read_users(
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    session: SessionDep,
+    skip: int = 0,
+    limit: int = 100,
+) -> Any:
     """
     Retrieve users.
 
     Requires Admin role (Story 2.2, AC: #9).
+    Rate limited based on user role - Admins have unlimited access (Story 2.4).
     """
 
     count_statement = select(func.count()).select_from(User)
@@ -56,11 +64,18 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     dependencies=[Depends(get_current_active_superuser), Depends(require_admin)],
     response_model=UserPublic,
 )
-def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
+@limiter.limit(get_dynamic_rate_limit)
+def create_user(
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    *,
+    session: SessionDep,
+    user_in: UserCreate,
+) -> Any:
     """
     Create new user.
 
     Requires Admin role (Story 2.2, AC: #9).
+    Rate limited based on user role - Admins have unlimited access (Story 2.4).
     """
     user = crud.get_user_by_email(session=session, email=user_in.email)
     if user:
@@ -83,11 +98,18 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
 
 
 @router.patch("/me", response_model=UserPublic)
+@limiter.limit(get_dynamic_rate_limit)
 def update_user_me(
-    *, session: SessionDep, user_in: UserUpdateMe, current_user: CurrentUser
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    *,
+    session: SessionDep,
+    user_in: UserUpdateMe,
+    current_user: CurrentUser,
 ) -> Any:
     """
     Update own user.
+
+    Rate limited based on user role (Story 2.4).
     """
 
     if user_in.email:
@@ -105,11 +127,18 @@ def update_user_me(
 
 
 @router.patch("/me/password", response_model=Message)
+@limiter.limit(get_dynamic_rate_limit)
 def update_password_me(
-    *, session: SessionDep, body: UpdatePassword, current_user: CurrentUser
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    *,
+    session: SessionDep,
+    body: UpdatePassword,
+    current_user: CurrentUser,
 ) -> Any:
     """
     Update own password.
+
+    Rate limited based on user role (Story 2.4).
     """
     if not verify_password(body.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect password")
@@ -125,17 +154,30 @@ def update_password_me(
 
 
 @router.get("/me", response_model=UserPublic)
-def read_user_me(current_user: CurrentUser) -> Any:
+@limiter.limit(get_dynamic_rate_limit)
+def read_user_me(
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    current_user: CurrentUser,
+) -> Any:
     """
     Get current user.
+
+    Rate limited based on user role (Story 2.4).
     """
     return current_user
 
 
 @router.delete("/me", response_model=Message)
-def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
+@limiter.limit(get_dynamic_rate_limit)
+def delete_user_me(
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> Any:
     """
     Delete own user.
+
+    Rate limited based on user role (Story 2.4).
     """
     if current_user.is_superuser:
         raise HTTPException(
@@ -146,10 +188,28 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     return Message(message="User deleted successfully")
 
 
+def get_signup_rate_limit() -> str:
+    """
+    Get configurable signup rate limit (Story 2.4).
+
+    Returns rate limit string for public signup endpoint.
+    Configurable via RATE_LIMIT_SIGNUP environment variable.
+    Default: 10/minute to prevent signup abuse.
+    """
+    return settings.RATE_LIMIT_SIGNUP
+
+
 @router.post("/signup", response_model=UserPublic)
-def register_user(session: SessionDep, user_in: UserRegister) -> Any:
+@limiter.limit(get_signup_rate_limit)
+def register_user(
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    session: SessionDep,
+    user_in: UserRegister,
+) -> Any:
     """
     Create new user without the need to be logged in.
+
+    Rate limited by IP to prevent abuse (configurable via RATE_LIMIT_SIGNUP).
     """
     user = crud.get_user_by_email(session=session, email=user_in.email)
     if user:
@@ -163,11 +223,17 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
 
 
 @router.get("/{user_id}", response_model=UserPublic)
+@limiter.limit(get_dynamic_rate_limit)
 def read_user_by_id(
-    user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    user_id: uuid.UUID,
+    session: SessionDep,
+    current_user: CurrentUser,
 ) -> Any:
     """
     Get a specific user by id.
+
+    Rate limited based on user role (Story 2.4).
     """
     user = session.get(User, user_id)
     if user == current_user:
@@ -185,7 +251,9 @@ def read_user_by_id(
     dependencies=[Depends(get_current_active_superuser), Depends(require_admin)],
     response_model=UserPublic,
 )
+@limiter.limit(get_dynamic_rate_limit)
 def update_user(
+    request: Request,  # noqa: ARG001 - Required by rate limiter
     *,
     session: SessionDep,
     user_id: uuid.UUID,
@@ -195,6 +263,7 @@ def update_user(
     Update a user.
 
     Requires Admin role (Story 2.2, AC: #9).
+    Rate limited based on user role - Admins have unlimited access (Story 2.4).
     """
 
     db_user = session.get(User, user_id)
@@ -218,13 +287,18 @@ def update_user(
     "/{user_id}",
     dependencies=[Depends(get_current_active_superuser), Depends(require_admin)],
 )
+@limiter.limit(get_dynamic_rate_limit)
 def delete_user(
-    session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
+    request: Request,  # noqa: ARG001 - Required by rate limiter
+    session: SessionDep,
+    current_user: CurrentUser,
+    user_id: uuid.UUID,
 ) -> Message:
     """
     Delete a user.
 
     Requires Admin role (Story 2.2, AC: #9).
+    Rate limited based on user role - Admins have unlimited access (Story 2.4).
     """
     user = session.get(User, user_id)
     if not user:
