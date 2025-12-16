@@ -326,6 +326,8 @@ export class UsersService {
     /**
      * Read Users
      * Retrieve users.
+     *
+     * Requires Admin role (Story 2.2, AC: #9).
      * @param data The data for the request.
      * @param data.skip
      * @param data.limit
@@ -349,6 +351,8 @@ export class UsersService {
     /**
      * Create User
      * Create new user.
+     *
+     * Requires Admin role (Story 2.2, AC: #9).
      * @param data The data for the request.
      * @param data.requestBody
      * @returns UserPublic Successful Response
@@ -476,6 +480,8 @@ export class UsersService {
     /**
      * Update User
      * Update a user.
+     *
+     * Requires Admin role (Story 2.2, AC: #9).
      * @param data The data for the request.
      * @param data.userId
      * @param data.requestBody
@@ -500,6 +506,8 @@ export class UsersService {
     /**
      * Delete User
      * Delete a user.
+     *
+     * Requires Admin role (Story 2.2, AC: #9).
      * @param data The data for the request.
      * @param data.userId
      * @returns Message Successful Response

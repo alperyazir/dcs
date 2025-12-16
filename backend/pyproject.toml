@@ -83,3 +83,10 @@ fail_under = 80
 
 [tool.coverage.html]
 show_contexts = true
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
