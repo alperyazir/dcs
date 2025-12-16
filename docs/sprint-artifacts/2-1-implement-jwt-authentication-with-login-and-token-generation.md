@@ -381,21 +381,34 @@ N/A
 - Integration tests require running database (PostgreSQL not available during final validation)
 - All linting and type checks pass
 
+**Code Review Fixes Applied:**
+- CRITICAL: Fixed password reset using HS256 (was broken by RS256 change)
+- CRITICAL: Added full claims validation (sub, email, role, tenant_id, type) in deps.py
+- MEDIUM: Removed duplicate get_client_ip function (now in rate_limit.py only)
+- MEDIUM: Added request_id to all auth logging for traceability
+- MEDIUM: Improved rate limit test with better documentation
+- MEDIUM: Updated File List to include all modified files
+
 ### File List
 
 **UPDATED Files:**
 - `backend/app/core/security.py` - RS256 JWT, create_access_token, create_refresh_token, verify_token
 - `backend/app/core/config.py` - JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, token expiry settings, SecretStr
-- `backend/app/api/deps.py` - RS256 public key verification in get_current_user
+- `backend/app/api/deps.py` - RS256 public key verification, claims validation in get_current_user
+- `backend/app/api/routes/login.py` - Updated to use new create_access_token signature
 - `backend/app/models.py` - TokenResponse, TokenPayload, RefreshTokenRequest schemas
 - `backend/app/main.py` - Rate limiter integration
 - `backend/app/api/main.py` - Auth router registration
+- `backend/app/utils.py` - Password reset tokens use HS256 (fixed RS256 bug)
 - `backend/pyproject.toml` - pyjwt[crypto] and slowapi dependencies
+- `backend/tests/crud/test_models.py` - Updated for new token signature
 - `.env.example` - JWT key documentation
 - `.gitignore` - Added keys/ directory
 - `docs/sprint-artifacts/sprint-status.yaml` - Story 2.1 status tracking
+- `backend/uv.lock` - Updated dependencies
 
 **CREATED Files:**
+- `backend/app/services/__init__.py` - Services package init
 - `backend/app/services/auth_service.py` - AuthService class with authenticate/refresh_tokens
 - `backend/app/api/routes/auth.py` - POST /auth/login, POST /auth/refresh endpoints
 - `backend/app/middleware/rate_limit.py` - Rate limiting configuration

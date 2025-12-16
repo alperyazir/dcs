@@ -9,7 +9,6 @@ import jwt
 from jinja2 import Template
 from jwt.exceptions import InvalidTokenError
 
-from app.core import security
 from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -100,6 +99,11 @@ def generate_new_account_email(
     return EmailData(html_content=html_content, subject=subject)
 
 
+# Password reset tokens use HS256 (symmetric) since they don't need asymmetric signing
+# and SECRET_KEY is a symmetric secret, not an RSA key pair
+PASSWORD_RESET_ALGORITHM = "HS256"
+
+
 def generate_password_reset_token(email: str) -> str:
     delta = timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS)
     now = datetime.now(timezone.utc)
@@ -108,7 +112,7 @@ def generate_password_reset_token(email: str) -> str:
     encoded_jwt = jwt.encode(
         {"exp": exp, "nbf": now, "sub": email},
         settings.SECRET_KEY.get_secret_value(),
-        algorithm=security.ALGORITHM,
+        algorithm=PASSWORD_RESET_ALGORITHM,
     )
     return encoded_jwt
 
@@ -118,7 +122,7 @@ def verify_password_reset_token(token: str) -> str | None:
         decoded_token = jwt.decode(
             token,
             settings.SECRET_KEY.get_secret_value(),
-            algorithms=[security.ALGORITHM],
+            algorithms=[PASSWORD_RESET_ALGORITHM],
         )
         return str(decoded_token["sub"])
     except InvalidTokenError:

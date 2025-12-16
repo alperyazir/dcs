@@ -15,7 +15,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.deps import SessionDep
-from app.middleware.rate_limit import limiter
+from app.middleware.rate_limit import get_client_ip, limiter
+from app.middleware.request_id import get_request_id
 from app.models import RefreshTokenRequest, TokenResponse
 from app.services.auth_service import (
     AuthService,
@@ -34,15 +35,6 @@ def get_auth_service(session: SessionDep) -> AuthService:
 
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
-
-
-def get_client_ip(request: Request) -> str:
-    """Extract client IP from request, handling X-Forwarded-For."""
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        # Take the first IP in the chain (original client)
-        return forwarded_for.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -70,6 +62,7 @@ async def login(
         - 429: Too many requests (rate limit exceeded)
     """
     client_ip = get_client_ip(request)
+    request_id = get_request_id(request)
 
     try:
         tokens = auth_service.authenticate(
@@ -79,6 +72,7 @@ async def login(
         logger.info(
             "User logged in successfully",
             extra={
+                "request_id": request_id,
                 "email": form_data.username,
                 "client_ip": client_ip,
                 "event": "login_success",
@@ -90,6 +84,7 @@ async def login(
         logger.warning(
             "Login attempt for inactive account",
             extra={
+                "request_id": request_id,
                 "email": form_data.username,
                 "client_ip": client_ip,
                 "event": "login_inactive_user",
@@ -105,6 +100,7 @@ async def login(
         logger.warning(
             "Failed login attempt",
             extra={
+                "request_id": request_id,
                 "email_attempted": form_data.username,
                 "client_ip": client_ip,
                 "event": "login_failed",
@@ -138,12 +134,14 @@ async def refresh_token(
         - 401: Invalid or expired refresh token
     """
     client_ip = get_client_ip(request)
+    request_id = get_request_id(request)
 
     try:
         tokens = auth_service.refresh_tokens(body.refresh_token)
         logger.info(
             "Token refreshed successfully",
             extra={
+                "request_id": request_id,
                 "client_ip": client_ip,
                 "event": "token_refresh_success",
             },
@@ -154,6 +152,7 @@ async def refresh_token(
         logger.warning(
             "Invalid refresh token attempt",
             extra={
+                "request_id": request_id,
                 "client_ip": client_ip,
                 "event": "token_refresh_failed",
             },
