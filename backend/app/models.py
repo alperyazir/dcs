@@ -198,6 +198,9 @@ class AssetUpdate(SQLModel):
 class Asset(AssetBase, table=True):
     """Database model for assets (files stored in MinIO)."""
 
+    # Marker for automatic tenant filtering in TenantAwareRepository (Story 2.3)
+    __tenant_aware__: bool = True
+
     __table_args__ = (
         Index("idx_assets_tenant_id", "tenant_id"),
         Index("idx_assets_user_id", "user_id"),
