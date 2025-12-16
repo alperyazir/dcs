@@ -16,6 +16,7 @@ from app.core.config import settings
 from app.middleware.logging_middleware import LoggingMiddleware
 from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
 from app.middleware.request_id import RequestIDMiddleware
+from app.middleware.tenant_context import TenantContextMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +55,10 @@ if settings.all_cors_origins:
 
 # Middleware registration order (LIFO - last added runs first on request)
 # 1. LoggingMiddleware - logs request/response with timing
-# 2. RequestIDMiddleware - generates unique request ID
+# 2. TenantContextMiddleware - extracts tenant context from JWT (Story 2.2)
+# 3. RequestIDMiddleware - generates unique request ID
 app.add_middleware(LoggingMiddleware)
+app.add_middleware(TenantContextMiddleware)
 app.add_middleware(RequestIDMiddleware)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
