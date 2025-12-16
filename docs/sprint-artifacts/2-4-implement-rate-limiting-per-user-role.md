@@ -1,6 +1,6 @@
 # Story 2.4: Implement Rate Limiting per User Role
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 

@@ -55,7 +55,7 @@ development_status:
   2-1-implement-jwt-authentication-with-login-and-token-generation: done
   2-2-implement-role-based-authorization-middleware: done
   2-3-implement-multi-tenant-database-isolation-with-row-level-security: done
-  2-4-implement-rate-limiting-per-user-role: review
+  2-4-implement-rate-limiting-per-user-role: done
   2-5-implement-user-management-endpoints-for-admin-supervisor: backlog
   epic-2-retrospective: optional
 
