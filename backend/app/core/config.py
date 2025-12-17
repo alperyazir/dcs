@@ -127,9 +127,10 @@ class Settings(BaseSettings):
         "text/plain",
     ]
 
-    # File size limits in bytes (AC: #1, NFR-P3)
+    # File size limits in bytes (AC: #1, NFR-P3, Story 3.4 AC: #5)
     MAX_FILE_SIZE_VIDEO: int = 10 * 1024 * 1024 * 1024  # 10GB
     MAX_FILE_SIZE_IMAGE: int = 500 * 1024 * 1024  # 500MB
+    MAX_FILE_SIZE_AUDIO: int = 100 * 1024 * 1024  # 100MB (Story 3.4)
     MAX_FILE_SIZE_DEFAULT: int = 5 * 1024 * 1024 * 1024  # 5GB
 
     # Presigned URL Configuration (Story 3.2)
@@ -139,6 +140,31 @@ class Settings(BaseSettings):
     PRESIGNED_URL_DOWNLOAD_EXPIRES_SECONDS: int = 3600
     # Stream URLs: 1 hour TTL for video/audio streaming (same as download)
     PRESIGNED_URL_STREAM_EXPIRES_SECONDS: int = 3600
+
+    # ZIP Upload Configuration (Story 3.3)
+    # Maximum ZIP file size (10GB per NFR-P3)
+    MAX_ZIP_FILE_SIZE: int = 10_737_418_240  # 10GB
+    # Maximum files to extract (prevent zip bomb)
+    MAX_ZIP_EXTRACTED_FILES: int = 1000
+    # Maximum total extracted size (50GB limit)
+    MAX_EXTRACTED_TOTAL_SIZE: int = 53_687_091_200  # 50GB
+    # Maximum compression ratio (zip bomb protection)
+    MAX_ZIP_COMPRESSION_RATIO: int = 100
+    # System file patterns to filter during extraction (FR3)
+    FILTERED_ZIP_PATTERNS: list[str] = [
+        r"\.DS_Store$",
+        r"__MACOSX/",
+        r"Thumbs\.db$",
+        r"\.git/",
+        r"desktop\.ini$",
+        r"\.tmp$",
+        r"~\$",
+        r"\.swp$",
+        r"\.swo$",
+        r"node_modules/",
+        r"__pycache__/",
+        r"\.pyc$",
+    ]
 
     @computed_field  # type: ignore[prop-decorator]
     @property

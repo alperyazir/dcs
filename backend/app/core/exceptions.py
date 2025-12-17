@@ -421,3 +421,173 @@ class AssetAccessDeniedError(HTTPException):
                 "timestamp": timestamp,
             },
         )
+
+
+class DangerousFileError(HTTPException):
+    """
+    Exception raised when file contains dangerous patterns (Story 3.4, AC: #9).
+
+    Returns 400 Bad Request with standardized error format.
+    Detects: double extensions, null bytes, unicode tricks, executable formats.
+    """
+
+    def __init__(
+        self,
+        filename: str,
+        pattern_type: str,
+        reason: str,
+        request_id: str | None = None,
+    ):
+        """
+        Initialize DangerousFileError.
+
+        Args:
+            filename: The dangerous filename
+            pattern_type: Type of pattern detected (e.g., "double_extension", "null_byte")
+            reason: Human-readable explanation
+            request_id: Optional request ID for tracing
+        """
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        detail: dict[str, Any] = {
+            "error_code": "DANGEROUS_FILE_DETECTED",
+            "message": f"File rejected for security reasons: {reason}",
+            "details": {
+                "filename": filename,
+                "pattern_type": pattern_type,
+            },
+            "timestamp": timestamp,
+        }
+
+        if request_id:
+            detail["request_id"] = request_id
+
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
+        )
+
+        logger.warning(
+            "Dangerous file pattern detected",
+            extra={
+                "file_name": filename,
+                "pattern_type": pattern_type,
+                "reason": reason,
+                "request_id": request_id,
+                "timestamp": timestamp,
+            },
+        )
+
+
+class ExtensionMismatchError(HTTPException):
+    """
+    Exception raised when file extension doesn't match Content-Type (Story 3.4, AC: #2).
+
+    Returns 400 Bad Request - prevents Content-Type spoofing attacks.
+    """
+
+    def __init__(
+        self,
+        filename: str,
+        extension: str,
+        claimed_mime: str,
+        expected_mimes: list[str],
+        request_id: str | None = None,
+    ):
+        """
+        Initialize ExtensionMismatchError.
+
+        Args:
+            filename: The filename with mismatched extension
+            extension: File extension found
+            claimed_mime: MIME type from Content-Type header
+            expected_mimes: Expected MIME types for the extension
+            request_id: Optional request ID for tracing
+        """
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        detail: dict[str, Any] = {
+            "error_code": "EXTENSION_MISMATCH",
+            "message": f"File extension '{extension}' does not match Content-Type '{claimed_mime}'. "
+            f"Expected types for {extension}: {', '.join(expected_mimes)}",
+            "details": {
+                "filename": filename,
+                "extension": extension,
+                "claimed_mime": claimed_mime,
+                "expected_mimes": expected_mimes,
+            },
+            "timestamp": timestamp,
+        }
+
+        if request_id:
+            detail["request_id"] = request_id
+
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
+        )
+
+        logger.warning(
+            "Extension-MIME mismatch detected (possible spoofing)",
+            extra={
+                "file_name": filename,
+                "extension": extension,
+                "claimed_mime": claimed_mime,
+                "expected_mimes": expected_mimes,
+                "request_id": request_id,
+                "timestamp": timestamp,
+            },
+        )
+
+
+class ExecutableDetectedError(HTTPException):
+    """
+    Exception raised when file is detected as executable format (Story 3.4, AC: #10).
+
+    Returns 400 Bad Request - executables are ALWAYS rejected regardless of Content-Type.
+    """
+
+    def __init__(
+        self,
+        format_name: str,
+        claimed_mime: str,
+        request_id: str | None = None,
+    ):
+        """
+        Initialize ExecutableDetectedError.
+
+        Args:
+            format_name: Detected executable format (e.g., "Windows PE", "Linux ELF")
+            claimed_mime: Claimed MIME type from upload
+            request_id: Optional request ID for tracing
+        """
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        detail: dict[str, Any] = {
+            "error_code": "EXECUTABLE_DETECTED",
+            "message": f"File appears to be an executable ({format_name}). "
+            "Executable files are not allowed for security reasons.",
+            "details": {
+                "detected_format": format_name,
+                "claimed_mime": claimed_mime,
+            },
+            "timestamp": timestamp,
+        }
+
+        if request_id:
+            detail["request_id"] = request_id
+
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
+        )
+
+        logger.error(
+            "SECURITY: Executable file upload blocked",
+            extra={
+                "format_name": format_name,
+                "claimed_mime": claimed_mime,
+                "request_id": request_id,
+                "timestamp": timestamp,
+            },
+        )

@@ -139,7 +139,7 @@ class TestUploadEndpoint:
         client: TestClient,
         tenant_user_token_headers: dict[str, str],
     ) -> None:
-        """POST /assets/upload with .exe returns 400 INVALID_FILE_TYPE (Task 9.5)."""
+        """POST /assets/upload with .exe returns 400 DANGEROUS_FILE_DETECTED (Story 3.4)."""
         file_content = b"MZ executable content"
 
         response = client.post(
@@ -157,11 +157,12 @@ class TestUploadEndpoint:
         assert response.status_code == 400
         data = response.json()
         # Check for error_code in detail or directly in response
+        # Story 3.4: Dangerous file patterns (.exe) are now caught first
         detail = data.get("detail", data)
         if isinstance(detail, dict):
-            assert detail.get("error_code") == "INVALID_FILE_TYPE"
+            assert detail.get("error_code") == "DANGEROUS_FILE_DETECTED"
         else:
-            assert "INVALID_FILE_TYPE" in str(data)
+            assert "DANGEROUS_FILE_DETECTED" in str(data)
 
     def test_upload_creates_audit_log(
         self,
