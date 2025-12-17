@@ -421,3 +421,162 @@ class AssetAccessDeniedError(HTTPException):
                 "timestamp": timestamp,
             },
         )
+
+
+class InvalidAssetTypeError(HTTPException):
+    """
+    Exception raised when asset type doesn't match operation requirements (Story 4.2, AC: #9).
+
+    Returns 400 Bad Request with INVALID_ASSET_TYPE error code.
+    Used for streaming endpoints that only support video/audio files.
+    """
+
+    def __init__(
+        self,
+        message: str = "Invalid asset type for this operation",
+        details: dict[str, Any] | None = None,
+        request_id: str | None = None,
+    ):
+        """
+        Initialize InvalidAssetTypeError.
+
+        Args:
+            message: Error message describing the type mismatch
+            details: Additional error details (mime_type, supported_types, etc.)
+            request_id: Optional request ID for tracing
+        """
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        detail: dict[str, Any] = {
+            "error_code": "INVALID_ASSET_TYPE",
+            "message": message,
+            "details": details or {},
+            "timestamp": timestamp,
+        }
+
+        if request_id:
+            detail["request_id"] = request_id
+
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
+        )
+
+        logger.warning(
+            "Invalid asset type for operation",
+            extra={
+                "error_msg": message,
+                "details": details,
+                "request_id": request_id,
+                "timestamp": timestamp,
+            },
+        )
+
+
+class BatchAssetNotFoundError(HTTPException):
+    """
+    Exception for batch operations when one or more assets don't exist.
+
+    Returns 404 Not Found with details about missing/deleted assets.
+    """
+
+    def __init__(
+        self,
+        error_message: str,
+        missing_asset_ids: list[str] | None = None,
+        deleted_asset_ids: list[str] | None = None,
+        request_id: str | None = None,
+    ):
+        """
+        Initialize BatchAssetNotFoundError.
+
+        Args:
+            error_message: Main error message
+            missing_asset_ids: IDs of assets not found
+            deleted_asset_ids: IDs of deleted assets
+            request_id: Optional request ID for tracing
+        """
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        details_dict: dict[str, Any] = {}
+        if missing_asset_ids:
+            details_dict["missing_asset_ids"] = missing_asset_ids
+        if deleted_asset_ids:
+            details_dict["deleted_asset_ids"] = deleted_asset_ids
+
+        detail: dict[str, Any] = {
+            "error_code": "ASSET_NOT_FOUND",
+            "message": error_message,
+            "details": details_dict,
+            "timestamp": timestamp,
+        }
+
+        if request_id:
+            detail["request_id"] = request_id
+
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=detail,
+        )
+
+        logger.info(
+            "Batch assets not found",
+            extra={
+                "missing_count": len(missing_asset_ids) if missing_asset_ids else 0,
+                "deleted_count": len(deleted_asset_ids) if deleted_asset_ids else 0,
+                "request_id": request_id,
+                "timestamp": timestamp,
+            },
+        )
+
+
+class BatchAssetAccessDeniedError(HTTPException):
+    """
+    Exception for batch operations when user lacks permission for one or more assets.
+
+    Returns 403 Forbidden with details about inaccessible assets.
+    """
+
+    def __init__(
+        self,
+        error_message: str,
+        inaccessible_assets: list[dict[str, str]] | None = None,
+        request_id: str | None = None,
+    ):
+        """
+        Initialize BatchAssetAccessDeniedError.
+
+        Args:
+            error_message: Main error message
+            inaccessible_assets: List of dicts with 'asset_id' and 'reason' keys
+            request_id: Optional request ID for tracing
+        """
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        detail: dict[str, Any] = {
+            "error_code": "PERMISSION_DENIED",
+            "message": error_message,
+            "details": {
+                "inaccessible_assets": inaccessible_assets or [],
+            },
+            "timestamp": timestamp,
+        }
+
+        if request_id:
+            detail["request_id"] = request_id
+
+        super().__init__(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=detail,
+        )
+
+        logger.warning(
+            "Batch asset access denied",
+            extra={
+                "inaccessible_count": len(inaccessible_assets)
+                if inaccessible_assets
+                else 0,
+                "request_id": request_id,
+                "timestamp": timestamp,
+            },
+        )

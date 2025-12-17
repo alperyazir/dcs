@@ -64,6 +64,28 @@ class AssetRepository(TenantAwareRepository[Asset]):
         statement = self._apply_tenant_filter(statement)
         return self.session.exec(statement).first()
 
+    def get_by_ids(self, asset_ids: list[UUID]) -> list[Asset]:
+        """
+        Get multiple assets by IDs with tenant filtering (Story 4.4).
+
+        Args:
+            asset_ids: List of asset UUIDs
+
+        Returns:
+            List of assets found (may be fewer than requested if some don't exist
+            or are in other tenants). Returns empty list if none found.
+
+        References:
+            - Task 3.2: Batch access validation
+            - Story 4.4: Batch Download
+        """
+        if not asset_ids:
+            return []
+
+        statement = select(Asset).where(Asset.id.in_(asset_ids))  # type: ignore[attr-defined]
+        statement = self._apply_tenant_filter(statement)
+        return list(self.session.exec(statement).all())
+
     def list_by_user(
         self,
         user_id: UUID,

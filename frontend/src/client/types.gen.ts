@@ -56,6 +56,64 @@ export type AssetResponse = {
     updated_at: string;
 };
 
+/**
+ * Request schema for batch download endpoint (AC: #1, #11, #12).
+ *
+ * Validates:
+ * - Non-empty asset list (min 1)
+ * - Maximum 100 assets per request
+ * - No duplicate asset IDs
+ *
+ * References:
+ * - Task 2.2: Request schema with validation
+ * - AC: #11 (empty list), #12 (too many assets)
+ */
+export type BatchDownloadRequest = {
+    /**
+     * List of asset IDs to include in batch download (1-100 assets)
+     */
+    asset_ids: Array<(string)>;
+};
+
+/**
+ * Response schema for batch download endpoint (AC: #4).
+ *
+ * Contains:
+ * - Presigned download URL for the generated ZIP
+ * - Expiration time (1 hour, AC: #5, #8)
+ * - File metadata (count, sizes)
+ *
+ * References:
+ * - Task 2.3: Response schema
+ * - AC: #4 (download URL), #5 (expiry)
+ */
+export type BatchDownloadResponse = {
+    /**
+     * Presigned URL to download the generated ZIP file
+     */
+    download_url: string;
+    /**
+     * URL and ZIP file expiration time (1 hour from creation)
+     */
+    expires_at: string;
+    /**
+     * Generated ZIP file name
+     */
+    file_name: string;
+    /**
+     * Number of files included in the ZIP
+     */
+    file_count: number;
+    /**
+     * Total size of all files before compression
+     */
+    total_size_bytes: number;
+    /**
+     * Size of the ZIP file
+     */
+    compressed_size_bytes: number;
+};
+
 export type Body_assets_upload_file = {
     /**
      * File to upload
@@ -79,6 +137,38 @@ export type Body_login_login_access_token = {
     scope?: string;
     client_id?: (string | null);
     client_secret?: (string | null);
+};
+
+/**
+ * Response schema for asset download endpoint.
+ *
+ * Returns presigned download URL with complete file metadata.
+ *
+ * References:
+ * - AC: #3 (enhanced download response)
+ * - Task 2.2 (schema fields)
+ */
+export type DownloadResponse = {
+    /**
+     * Presigned URL for direct MinIO download (1-hour TTL)
+     */
+    download_url: string;
+    /**
+     * URL expiration time in ISO-8601 format
+     */
+    expires_at: string;
+    /**
+     * Original file name
+     */
+    file_name: string;
+    /**
+     * File size in bytes
+     */
+    file_size: number;
+    /**
+     * MIME type of the file
+     */
+    mime_type: string;
 };
 
 /**
@@ -150,6 +240,65 @@ export type NewPassword = {
     new_password: string;
 };
 
+/**
+ * Response schema for asset preview endpoint (AC: #1, #8, #9).
+ *
+ * Returns a presigned URL appropriate for inline preview based on asset type.
+ * For unsupported types, returns null URL with file metadata only.
+ *
+ * Attributes:
+ * preview_url: Presigned URL for preview (null for unsupported types)
+ * preview_type: Type of preview (image, video, audio, pdf, document, unsupported)
+ * expires_at: URL expiration timestamp (null for unsupported types)
+ * mime_type: Original MIME type of the asset
+ * file_name: Original file name
+ * file_size: File size in bytes
+ * supports_inline: Whether the asset can be previewed inline in browser
+ */
+export type PreviewResponse = {
+    /**
+     * Presigned URL for preview (null for unsupported types)
+     */
+    preview_url?: (string | null);
+    /**
+     * Type of preview: image, video, audio, pdf, document, unsupported
+     */
+    preview_type: PreviewType;
+    /**
+     * URL expiration time (ISO-8601, null for unsupported types)
+     */
+    expires_at?: (string | null);
+    /**
+     * Original MIME type of the asset
+     */
+    mime_type: string;
+    /**
+     * Original file name
+     */
+    file_name: string;
+    /**
+     * File size in bytes
+     */
+    file_size: number;
+    /**
+     * Whether the asset can be previewed inline in browser
+     */
+    supports_inline: boolean;
+};
+
+/**
+ * Types of asset previews supported.
+ *
+ * Determines how the frontend should render the preview:
+ * - image: Display in <img> tag
+ * - video: Display in <video> tag with controls
+ * - audio: Display in <audio> tag with controls
+ * - pdf: Display in <iframe> or PDF.js viewer
+ * - document: Display in code/text viewer
+ * - unsupported: No inline preview, download only
+ */
+export type PreviewType = 'image' | 'video' | 'audio' | 'pdf' | 'document' | 'unsupported';
+
 export type PrivateUserCreate = {
     email: string;
     password: string;
@@ -188,6 +337,43 @@ export type SignedURLResponse = {
  * Type of signed URL operation
  */
 export type type = 'download' | 'upload' | 'stream';
+
+/**
+ * Response schema for streaming endpoint.
+ *
+ * Returns presigned URL for video/audio streaming with HTTP Range support.
+ * URL is valid for 1 hour (PRESIGNED_URL_STREAM_EXPIRES_SECONDS).
+ *
+ * References:
+ * - Task 2: Streaming response schema
+ * - AC: #2, #6 (stream URL with expiration and metadata)
+ */
+export type StreamingURLResponse = {
+    /**
+     * Presigned URL for MinIO streaming (supports HTTP Range requests)
+     */
+    stream_url: string;
+    /**
+     * URL expiration time (ISO-8601)
+     */
+    expires_at: string;
+    /**
+     * Content MIME type (video* or audio*)
+     */
+    mime_type: string;
+    /**
+     * Total file size in bytes
+     */
+    file_size: number;
+    /**
+     * Original file name
+     */
+    file_name: string;
+    /**
+     * Media duration in seconds (if available in metadata)
+     */
+    duration_seconds?: (number | null);
+};
 
 /**
  * JSON payload containing access token (legacy, for backward compatibility).
@@ -358,6 +544,18 @@ export type AuthRefreshTokenData = {
 
 export type AuthRefreshTokenResponse = (TokenResponse);
 
+export type BatchDownloadBatchDownloadAssetsData = {
+    requestBody: BatchDownloadRequest;
+};
+
+export type BatchDownloadBatchDownloadAssetsResponse = (BatchDownloadResponse);
+
+export type DownloadDownloadAssetData = {
+    assetId: string;
+};
+
+export type DownloadDownloadAssetResponse = (DownloadResponse);
+
 export type HealthHealthCheckResponse = (HealthCheckResponse);
 
 export type ItemsReadItemsData = {
@@ -418,6 +616,12 @@ export type LoginRecoverPasswordHtmlContentData = {
 
 export type LoginRecoverPasswordHtmlContentResponse = (string);
 
+export type PreviewPreviewAssetData = {
+    assetId: string;
+};
+
+export type PreviewPreviewAssetResponse = (PreviewResponse);
+
 export type PrivateCreateUserData = {
     requestBody: PrivateUserCreate;
 };
@@ -441,6 +645,12 @@ export type SignedUrlsGetUploadUrlData = {
 };
 
 export type SignedUrlsGetUploadUrlResponse = (UploadURLResponse);
+
+export type StreamingStreamAssetData = {
+    assetId: string;
+};
+
+export type StreamingStreamAssetResponse = (StreamingURLResponse);
 
 export type UsersReadUsersData = {
     limit?: number;
