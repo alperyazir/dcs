@@ -14,7 +14,7 @@ References:
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlmodel import Session, select
@@ -197,7 +197,7 @@ class AssetRepository(TenantAwareRepository[Asset]):
         for field, value in update_data.items():
             setattr(asset, field, value)
 
-        asset.updated_at = datetime.now(timezone.utc)
+        asset.updated_at = datetime.now(UTC)
         self.session.add(asset)
         self.session.commit()
         self.session.refresh(asset)
@@ -227,8 +227,8 @@ class AssetRepository(TenantAwareRepository[Asset]):
             return None
 
         asset.is_deleted = True
-        asset.deleted_at = datetime.now(timezone.utc)
-        asset.updated_at = datetime.now(timezone.utc)
+        asset.deleted_at = datetime.now(UTC)
+        asset.updated_at = datetime.now(UTC)
 
         self.session.add(asset)
         self.session.commit()
@@ -267,7 +267,7 @@ class AssetRepository(TenantAwareRepository[Asset]):
 
         asset.is_deleted = False
         asset.deleted_at = None
-        asset.updated_at = datetime.now(timezone.utc)
+        asset.updated_at = datetime.now(UTC)
 
         self.session.add(asset)
         self.session.commit()
