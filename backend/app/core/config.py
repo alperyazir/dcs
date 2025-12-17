@@ -107,6 +107,31 @@ class Settings(BaseSettings):
     RATE_LIMIT_LOGIN: str = "5/minute"  # Brute force protection
     RATE_LIMIT_SIGNUP: str = "10/minute"  # Signup abuse protection
 
+    # File Upload Configuration (Story 3.1)
+    # MIME types whitelist (AC: #2)
+    ALLOWED_MIME_TYPES: list[str] = [
+        "application/pdf",
+        "video/mp4",
+        "video/webm",
+        "video/quicktime",
+        "audio/mpeg",
+        "audio/mp3",
+        "audio/wav",
+        "audio/ogg",
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "application/zip",
+        "application/json",
+        "text/plain",
+    ]
+
+    # File size limits in bytes (AC: #1, NFR-P3)
+    MAX_FILE_SIZE_VIDEO: int = 10 * 1024 * 1024 * 1024  # 10GB
+    MAX_FILE_SIZE_IMAGE: int = 500 * 1024 * 1024  # 500MB
+    MAX_FILE_SIZE_DEFAULT: int = 5 * 1024 * 1024 * 1024  # 5GB
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def minio_secure(self) -> bool:

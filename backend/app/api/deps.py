@@ -88,9 +88,11 @@ def get_tenant_session(request: Request) -> Generator[Session, None, None]:
             if bypass or tenant_uuid is None:
                 session.execute(text("SET LOCAL app.current_tenant_id = ''"))
             else:
+                # Use string formatting for SET LOCAL (PostgreSQL doesn't support parameters)
+                # Safe because tenant_uuid is a validated UUID object, not user input
+                tenant_id_str = str(tenant_uuid)
                 session.execute(
-                    text("SET LOCAL app.current_tenant_id = :tenant_id"),
-                    {"tenant_id": str(tenant_uuid)},
+                    text(f"SET LOCAL app.current_tenant_id = '{tenant_id_str}'")
                 )
             yield session
     finally:
