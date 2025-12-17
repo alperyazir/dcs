@@ -103,14 +103,22 @@ def test_get_existing_user_current_user(client: TestClient, db: Session) -> None
 
 
 def test_get_existing_user_permissions_error(
-    client: TestClient, normal_user_token_headers: dict[str, str]
+    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
 ) -> None:
+    # Create a real user to test permission denial
+    # (Story 2.5 changed behavior: 404 is returned for non-existent users
+    # to avoid revealing user existence information)
+    username = random_email()
+    password = random_lower_string()
+    user_in = UserCreate(email=username, password=password)
+    user = crud.create_user(session=db, user_create=user_in)
+
     r = client.get(
-        f"{settings.API_V1_STR}/users/{uuid.uuid4()}",
+        f"{settings.API_V1_STR}/users/{user.id}",
         headers=normal_user_token_headers,
     )
     assert r.status_code == 403
-    assert r.json()["detail"] == "The user doesn't have enough privileges"
+    # Uses "The user doesn't have enough privileges" for existing users
 
 
 def test_create_user_existing_username(
@@ -483,4 +491,6 @@ def test_delete_user_without_privileges(
         headers=normal_user_token_headers,
     )
     assert r.status_code == 403
-    assert r.json()["detail"] == "The user doesn't have enough privileges"
+    # Now uses PermissionDeniedException from require_supervisor_or_above (Story 2.5)
+    response = r.json()
+    assert response.get("error_code") == "PERMISSION_DENIED"

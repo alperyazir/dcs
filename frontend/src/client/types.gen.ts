@@ -284,7 +284,9 @@ export type PrivateCreateUserResponse = (UserPublic);
 
 export type UsersReadUsersData = {
     limit?: number;
+    role?: (UserRole | null);
     skip?: number;
+    tenantId?: (string | null);
 };
 
 export type UsersReadUsersResponse = (UsersPublic);

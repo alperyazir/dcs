@@ -51,12 +51,12 @@ development_status:
   1-7-configure-https-security-headers-and-encryption: done
   epic-1-retrospective: optional
 
-  epic-2: in-progress
+  epic-2: done
   2-1-implement-jwt-authentication-with-login-and-token-generation: done
   2-2-implement-role-based-authorization-middleware: done
   2-3-implement-multi-tenant-database-isolation-with-row-level-security: done
   2-4-implement-rate-limiting-per-user-role: done
-  2-5-implement-user-management-endpoints-for-admin-supervisor: backlog
+  2-5-implement-user-management-endpoints-for-admin-supervisor: done
   epic-2-retrospective: optional
 
   epic-3: backlog
