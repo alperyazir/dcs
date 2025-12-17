@@ -9,6 +9,7 @@ from app.api.routes import (
     upload,
     users,
     utils,
+    validation,
 )
 from app.core.config import settings
 
@@ -20,6 +21,7 @@ api_router.include_router(utils.router)
 api_router.include_router(items.router)
 api_router.include_router(upload.router)  # Story 3.1: Asset upload endpoint
 api_router.include_router(signed_urls.router)  # Story 3.2: Signed URL endpoints
+api_router.include_router(validation.router)  # Story 3.4: Validation rules endpoint
 
 
 if settings.ENVIRONMENT == "local":

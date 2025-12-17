@@ -22,6 +22,7 @@ import pytest
 from fastapi import UploadFile
 
 from app.core.exceptions import (
+    ExecutableDetectedError,
     InvalidFilenameError,
     InvalidFileTypeError,
     UploadError,
@@ -101,11 +102,16 @@ class TestAssetServiceValidation:
     async def test_invalid_mime_type_raises_error(
         self, mock_session, mock_user, mock_upload_file
     ):
-        """Invalid MIME type raises InvalidFileTypeError."""
+        """Invalid MIME type raises InvalidFileTypeError (Story 3.4 enhanced).
+
+        Note: With Story 3.4 enhancements, .exe files are now rejected as
+        DangerousFileError first (before MIME check), so we use a non-dangerous
+        filename with invalid MIME type.
+        """
         file = await mock_upload_file(
-            content=b"MZ executable",
-            filename="malware.exe",
-            content_type="application/x-msdownload",
+            content=b"some content",
+            filename="unknown.xyz",
+            content_type="application/x-unknown-type",
         )
 
         service = AssetService(session=mock_session, current_user=mock_user)
@@ -113,7 +119,7 @@ class TestAssetServiceValidation:
         with pytest.raises(InvalidFileTypeError) as exc_info:
             await service.create_asset(file=file, ip_address="127.0.0.1")
 
-        assert "application/x-msdownload" in str(exc_info.value.detail)
+        assert "application/x-unknown-type" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
     async def test_invalid_filename_raises_error(
@@ -135,8 +141,12 @@ class TestAssetServiceValidation:
     async def test_magic_bytes_mismatch_raises_error(
         self, mock_session, mock_user, mock_upload_file
     ):
-        """File with wrong magic bytes raises InvalidFileTypeError."""
-        # EXE content claimed as PDF
+        """File with executable magic bytes raises ExecutableDetectedError (Story 3.4, AC: #10).
+
+        With Story 3.4 enhancements, executable format detection (MZ header = Windows PE)
+        raises a specific ExecutableDetectedError instead of generic InvalidFileTypeError.
+        """
+        # EXE content claimed as PDF - MZ header is Windows PE signature
         file = await mock_upload_file(
             content=b"MZ\x90\x00 executable content",
             filename="document.pdf",
@@ -145,7 +155,7 @@ class TestAssetServiceValidation:
 
         service = AssetService(session=mock_session, current_user=mock_user)
 
-        with pytest.raises(InvalidFileTypeError):
+        with pytest.raises(ExecutableDetectedError):
             await service.create_asset(file=file, ip_address="127.0.0.1")
 
 

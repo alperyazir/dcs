@@ -156,10 +156,18 @@ class TestGetSizeLimitForMimeType:
         assert get_size_limit_for_mime_type("image/jpeg") == 500 * 1024 * 1024
         assert get_size_limit_for_mime_type("image/png") == 500 * 1024 * 1024
 
+    def test_audio_limit_is_100mb(self) -> None:
+        """Audio types have 100MB limit (Story 3.4, AC: #5)."""
+        assert get_size_limit_for_mime_type("audio/mpeg") == 100 * 1024 * 1024
+        assert get_size_limit_for_mime_type("audio/wav") == 100 * 1024 * 1024
+        assert get_size_limit_for_mime_type("audio/ogg") == 100 * 1024 * 1024
+
     def test_default_limit_is_5gb(self) -> None:
         """Other types have 5GB default limit."""
         assert get_size_limit_for_mime_type("application/pdf") == 5 * 1024 * 1024 * 1024
-        assert get_size_limit_for_mime_type("audio/mpeg") == 5 * 1024 * 1024 * 1024
+        assert (
+            get_size_limit_for_mime_type("application/json") == 5 * 1024 * 1024 * 1024
+        )
 
 
 class TestGetSafeFilename:
@@ -331,9 +339,16 @@ class TestValidateFile:
 
     def test_invalid_mime_rejected_first(self) -> None:
         """Invalid MIME type is detected and rejected."""
-        result = validate_file("malware.exe", "application/x-msdownload", 1024)
+        # Use a non-dangerous filename to test MIME validation specifically
+        result = validate_file("document.xyz", "application/x-unknown-type", 1024)
         assert not result.is_valid
         assert result.error_code == "INVALID_FILE_TYPE"
+
+    def test_dangerous_filename_rejected_first(self) -> None:
+        """Dangerous filename is rejected before MIME validation (Story 3.4, AC: #9)."""
+        result = validate_file("malware.exe", "application/x-msdownload", 1024)
+        assert not result.is_valid
+        assert result.error_code == "DANGEROUS_FILENAME"
 
     def test_oversized_file_rejected(self) -> None:
         """Oversized file is rejected after MIME validation."""
@@ -359,7 +374,7 @@ class TestValidateFile:
         assert result.is_valid
 
     def test_spoofed_file_with_magic_bytes_rejected(self) -> None:
-        """File with wrong magic bytes is rejected during full validation."""
+        """File with executable magic bytes is rejected (Story 3.4, AC: #10)."""
         exe_content = b"MZ\x90\x00 executable content"
         result = validate_file(
             "document.pdf",
@@ -368,4 +383,5 @@ class TestValidateFile:
             file_content=exe_content,
         )
         assert not result.is_valid
-        assert result.error_code == "INVALID_FILE_TYPE"
+        # Executable detection is a security-critical check and should be specific
+        assert result.error_code == "EXECUTABLE_DETECTED"
