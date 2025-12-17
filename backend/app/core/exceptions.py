@@ -319,3 +319,105 @@ class UploadError(HTTPException):
                 "timestamp": timestamp,
             },
         )
+
+
+class AssetNotFoundError(HTTPException):
+    """
+    Exception raised when requested asset does not exist (Story 3.2, AC: #8).
+
+    Returns 404 Not Found - prevents asset enumeration attacks.
+    """
+
+    def __init__(
+        self,
+        asset_id: UUID | str,
+        request_id: str | None = None,
+    ):
+        """
+        Initialize AssetNotFoundError.
+
+        Args:
+            asset_id: ID of the asset that was not found
+            request_id: Optional request ID for tracing
+        """
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        detail: dict[str, Any] = {
+            "error_code": "ASSET_NOT_FOUND",
+            "message": "Asset not found",
+            "details": {
+                "asset_id": str(asset_id),
+            },
+            "timestamp": timestamp,
+        }
+
+        if request_id:
+            detail["request_id"] = request_id
+
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=detail,
+        )
+
+        logger.info(
+            "Asset not found",
+            extra={
+                "asset_id": str(asset_id),
+                "request_id": request_id,
+                "timestamp": timestamp,
+            },
+        )
+
+
+class AssetAccessDeniedError(HTTPException):
+    """
+    Exception raised when user lacks permission to access an asset (Story 3.2, AC: #8).
+
+    Returns 403 Forbidden with standardized error format.
+    """
+
+    def __init__(
+        self,
+        asset_id: UUID | str,
+        user_id: UUID | str,
+        reason: str = "You do not have permission to access this asset",
+        request_id: str | None = None,
+    ):
+        """
+        Initialize AssetAccessDeniedError.
+
+        Args:
+            asset_id: ID of the asset being accessed
+            user_id: ID of the user denied access
+            reason: Reason for denial
+            request_id: Optional request ID for tracing
+        """
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        detail: dict[str, Any] = {
+            "error_code": "PERMISSION_DENIED",
+            "message": reason,
+            "details": {
+                "asset_id": str(asset_id),
+            },
+            "timestamp": timestamp,
+        }
+
+        if request_id:
+            detail["request_id"] = request_id
+
+        super().__init__(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=detail,
+        )
+
+        logger.warning(
+            "Asset access denied",
+            extra={
+                "asset_id": str(asset_id),
+                "user_id": str(user_id),
+                "reason": reason,
+                "request_id": request_id,
+                "timestamp": timestamp,
+            },
+        )

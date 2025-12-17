@@ -1,20 +1,24 @@
 """
-MinIO Client Module (Story 3.1, Task 2).
+MinIO Client Module (Story 3.1, Task 2; Story 3.2, Task 2).
 
 Provides:
 - MinIO client singleton
 - Streaming upload operations (AC: #3, #7)
 - Object key generation with tenant isolation
 - Checksum calculation during upload (AC: #5)
+- Presigned URL generation for direct MinIO access (Story 3.2)
 
 References:
 - AC: #3 (upload to MinIO with tenant path)
 - AC: #5 (MD5 checksum calculation)
 - AC: #7 (streaming design, no full memory buffering)
+- Story 3.2 AC: #1, #4, #7 (presigned URLs with HMAC-SHA256)
 """
 
 import hashlib
 import logging
+import time
+from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from io import BytesIO
 from typing import BinaryIO
@@ -288,3 +292,139 @@ def get_object_url(
     # Build URL from endpoint and bucket/key
     protocol = "https" if settings.minio_secure else "http"
     return f"{protocol}://{settings.MINIO_ENDPOINT}/{bucket}/{object_key}"
+
+
+def generate_presigned_download_url(
+    bucket: str,
+    object_key: str,
+    expires_seconds: int | None = None,
+    client: Minio | None = None,
+) -> tuple[str, datetime]:
+    """
+    Generate presigned URL for downloading an object (Story 3.2, AC: #1, #3, #4).
+
+    Uses MinIO SDK's presigned_get_object() which generates HMAC-SHA256 signed URLs.
+    The URL allows direct download from MinIO without API proxying.
+
+    Args:
+        bucket: Bucket name
+        object_key: Full object key (path in bucket)
+        expires_seconds: URL expiration in seconds (default from settings: 3600 = 1 hour)
+        client: MinIO client (uses singleton if not provided)
+
+    Returns:
+        Tuple of (presigned_url, expiration_datetime)
+
+    Raises:
+        S3Error: If MinIO operation fails
+    """
+    start_time = time.time()
+
+    if client is None:
+        client = get_minio_client()
+
+    if expires_seconds is None:
+        expires_seconds = settings.PRESIGNED_URL_DOWNLOAD_EXPIRES_SECONDS
+
+    expires = timedelta(seconds=expires_seconds)
+    expiration_time = datetime.now(timezone.utc) + expires
+
+    try:
+        url = client.presigned_get_object(
+            bucket_name=bucket,
+            object_name=object_key,
+            expires=expires,
+        )
+
+        duration_ms = (time.time() - start_time) * 1000
+
+        logger.info(
+            "Generated presigned download URL",
+            extra={
+                "bucket": bucket,
+                "object_key": object_key,
+                "expires_seconds": expires_seconds,
+                "duration_ms": round(duration_ms, 2),
+            },
+        )
+
+        return url, expiration_time
+
+    except S3Error as e:
+        logger.error(
+            "Failed to generate presigned download URL",
+            extra={
+                "bucket": bucket,
+                "object_key": object_key,
+                "error": str(e),
+            },
+        )
+        raise
+
+
+def generate_presigned_upload_url(
+    bucket: str,
+    object_key: str,
+    expires_seconds: int | None = None,
+    client: Minio | None = None,
+) -> tuple[str, datetime]:
+    """
+    Generate presigned URL for uploading an object (Story 3.2, AC: #1, #2, #4).
+
+    Uses MinIO SDK's presigned_put_object() which generates HMAC-SHA256 signed URLs.
+    The URL allows direct upload to MinIO without API proxying.
+
+    Args:
+        bucket: Bucket name
+        object_key: Full object key (path in bucket)
+        expires_seconds: URL expiration in seconds (default from settings: 900 = 15 min)
+        client: MinIO client (uses singleton if not provided)
+
+    Returns:
+        Tuple of (presigned_url, expiration_datetime)
+
+    Raises:
+        S3Error: If MinIO operation fails
+    """
+    start_time = time.time()
+
+    if client is None:
+        client = get_minio_client()
+
+    if expires_seconds is None:
+        expires_seconds = settings.PRESIGNED_URL_UPLOAD_EXPIRES_SECONDS
+
+    expires = timedelta(seconds=expires_seconds)
+    expiration_time = datetime.now(timezone.utc) + expires
+
+    try:
+        url = client.presigned_put_object(
+            bucket_name=bucket,
+            object_name=object_key,
+            expires=expires,
+        )
+
+        duration_ms = (time.time() - start_time) * 1000
+
+        logger.info(
+            "Generated presigned upload URL",
+            extra={
+                "bucket": bucket,
+                "object_key": object_key,
+                "expires_seconds": expires_seconds,
+                "duration_ms": round(duration_ms, 2),
+            },
+        )
+
+        return url, expiration_time
+
+    except S3Error as e:
+        logger.error(
+            "Failed to generate presigned upload URL",
+            extra={
+                "bucket": bucket,
+                "object_key": object_key,
+                "error": str(e),
+            },
+        )
+        raise
