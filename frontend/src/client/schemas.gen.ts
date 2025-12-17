@@ -111,6 +111,20 @@ export const Body_assets_upload_fileSchema = {
     title: 'Body_assets-upload_file'
 } as const;
 
+export const Body_assets_upload_zipSchema = {
+    properties: {
+        file: {
+            type: 'string',
+            format: 'binary',
+            title: 'File',
+            description: 'ZIP archive to upload and extract'
+        }
+    },
+    type: 'object',
+    required: ['file'],
+    title: 'Body_assets-upload_zip'
+} as const;
+
 export const Body_auth_loginSchema = {
     properties: {
         grant_type: {
@@ -219,6 +233,57 @@ export const Body_login_login_access_tokenSchema = {
     type: 'object',
     required: ['username', 'password'],
     title: 'Body_login-login_access_token'
+} as const;
+
+export const ExtensionMappingSchema = {
+    properties: {
+        extension: {
+            type: 'string',
+            title: 'Extension',
+            description: "File extension (e.g., '.pdf')"
+        },
+        mime_types: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Mime Types',
+            description: 'Allowed MIME types for this extension'
+        }
+    },
+    type: 'object',
+    required: ['extension', 'mime_types'],
+    title: 'ExtensionMapping',
+    description: 'Extension to MIME type mapping.'
+} as const;
+
+export const FailedFileInfoSchema = {
+    properties: {
+        file_name: {
+            type: 'string',
+            title: 'File Name',
+            description: 'Name of the failed file'
+        },
+        error_code: {
+            type: 'string',
+            title: 'Error Code',
+            description: 'Machine-readable error code'
+        },
+        message: {
+            type: 'string',
+            title: 'Message',
+            description: 'Human-readable error message'
+        }
+    },
+    type: 'object',
+    required: ['file_name', 'error_code', 'message'],
+    title: 'FailedFileInfo',
+    description: 'Information about a file that failed validation during ZIP extraction.',
+    example: {
+        error_code: 'INVALID_FILE_TYPE',
+        file_name: 'virus.exe',
+        message: "File type 'application/x-msdownload' is not allowed"
+    }
 } as const;
 
 export const HTTPValidationErrorSchema = {
@@ -481,6 +546,53 @@ Returned when a presigned URL is successfully generated.`,
         expires_at: '2025-12-17T12:00:00Z',
         type: 'download',
         url: 'http://minio:9000/assets/publisher/tenant-id/asset-id/file.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...'
+    }
+} as const;
+
+export const SizeLimitInfoSchema = {
+    properties: {
+        category: {
+            type: 'string',
+            title: 'Category',
+            description: 'File category (video, image, audio, default)'
+        },
+        max_size_bytes: {
+            type: 'integer',
+            title: 'Max Size Bytes',
+            description: 'Maximum file size in bytes'
+        },
+        max_size_human: {
+            type: 'string',
+            title: 'Max Size Human',
+            description: "Human-readable size limit (e.g., '10 GB')"
+        }
+    },
+    type: 'object',
+    required: ['category', 'max_size_bytes', 'max_size_human'],
+    title: 'SizeLimitInfo',
+    description: 'Size limit information for a file category.'
+} as const;
+
+export const SkippedFileInfoSchema = {
+    properties: {
+        file_name: {
+            type: 'string',
+            title: 'File Name',
+            description: 'Name of the skipped file'
+        },
+        reason: {
+            type: 'string',
+            title: 'Reason',
+            description: 'Reason for skipping: system_file, directory, empty_file, path_traversal'
+        }
+    },
+    type: 'object',
+    required: ['file_name', 'reason'],
+    title: 'SkippedFileInfo',
+    description: 'Information about a file skipped during ZIP extraction.',
+    example: {
+        file_name: '.DS_Store',
+        reason: 'system_file'
     }
 } as const;
 
@@ -956,4 +1068,196 @@ export const ValidationErrorSchema = {
     type: 'object',
     required: ['loc', 'msg', 'type'],
     title: 'ValidationError'
+} as const;
+
+export const ValidationRulesResponseSchema = {
+    properties: {
+        allowed_mime_types: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Allowed Mime Types',
+            description: 'List of allowed MIME types'
+        },
+        size_limits: {
+            items: {
+                '$ref': '#/components/schemas/SizeLimitInfo'
+            },
+            type: 'array',
+            title: 'Size Limits',
+            description: 'Size limits per file category'
+        },
+        extension_mappings: {
+            items: {
+                '$ref': '#/components/schemas/ExtensionMapping'
+            },
+            type: 'array',
+            title: 'Extension Mappings',
+            description: 'Extension to MIME type mappings'
+        },
+        max_filename_length: {
+            type: 'integer',
+            title: 'Max Filename Length',
+            description: 'Maximum allowed filename length'
+        },
+        dangerous_extensions: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Dangerous Extensions',
+            description: 'Extensions that are always blocked'
+        }
+    },
+    type: 'object',
+    required: ['allowed_mime_types', 'size_limits', 'extension_mappings', 'max_filename_length', 'dangerous_extensions'],
+    title: 'ValidationRulesResponse',
+    description: `Response containing all file validation rules (Story 3.4, AC: #8).
+
+Use this to:
+- Show allowed file types in upload UI
+- Validate files before upload attempt
+- Display size limits to users
+- Build file type filters for file picker`,
+    example: {
+        allowed_mime_types: ['application/pdf', 'video/mp4', 'image/jpeg', 'audio/mpeg'],
+        dangerous_extensions: ['.exe', '.bat', '.cmd', '.com', '.msi'],
+        extension_mappings: [
+            {
+                extension: '.pdf',
+                mime_types: ['application/pdf']
+            },
+            {
+                extension: '.mp4',
+                mime_types: ['video/mp4']
+            },
+            {
+                extension: '.jpg',
+                mime_types: ['image/jpeg']
+            }
+        ],
+        max_filename_length: 255,
+        size_limits: [
+            {
+                category: 'video',
+                max_size_bytes: 10737418240,
+                max_size_human: '10 GB'
+            },
+            {
+                category: 'image',
+                max_size_bytes: 524288000,
+                max_size_human: '500 MB'
+            },
+            {
+                category: 'audio',
+                max_size_bytes: 104857600,
+                max_size_human: '100 MB'
+            },
+            {
+                category: 'default',
+                max_size_bytes: 5368709120,
+                max_size_human: '5 GB'
+            }
+        ]
+    }
+} as const;
+
+export const ZipUploadResponseSchema = {
+    properties: {
+        extracted_count: {
+            type: 'integer',
+            title: 'Extracted Count',
+            description: 'Number of files successfully extracted and uploaded'
+        },
+        skipped_count: {
+            type: 'integer',
+            title: 'Skipped Count',
+            description: 'Number of files skipped (system files, directories)'
+        },
+        failed_count: {
+            type: 'integer',
+            title: 'Failed Count',
+            description: 'Number of files that failed validation'
+        },
+        total_size_bytes: {
+            type: 'integer',
+            title: 'Total Size Bytes',
+            description: 'Total size of all extracted files in bytes'
+        },
+        assets: {
+            items: {
+                '$ref': '#/components/schemas/AssetResponse'
+            },
+            type: 'array',
+            title: 'Assets',
+            description: 'List of created asset records for extracted files'
+        },
+        skipped_files: {
+            items: {
+                '$ref': '#/components/schemas/SkippedFileInfo'
+            },
+            type: 'array',
+            title: 'Skipped Files',
+            description: 'Details of files skipped during extraction'
+        },
+        failed_files: {
+            items: {
+                '$ref': '#/components/schemas/FailedFileInfo'
+            },
+            type: 'array',
+            title: 'Failed Files',
+            description: 'Details of files that failed validation'
+        }
+    },
+    type: 'object',
+    required: ['extracted_count', 'skipped_count', 'failed_count', 'total_size_bytes', 'assets', 'skipped_files', 'failed_files'],
+    title: 'ZipUploadResponse',
+    description: `Response schema for ZIP archive upload (AC: #10).
+
+Returned on successful ZIP extraction with 201 Created.
+Contains counts and details of extracted, skipped, and failed files.`,
+    example: {
+        assets: [
+            {
+                asset_id: '550e8400-e29b-41d4-a716-446655440000',
+                bucket: 'assets',
+                checksum: 'd41d8cd98f00b204e9800998ecf8427e',
+                created_at: '2025-12-17T10:30:00Z',
+                file_name: 'document.pdf',
+                file_size_bytes: 1048576,
+                is_deleted: false,
+                mime_type: 'application/pdf',
+                object_key: 'publisher/tenant-123/asset-456/document.pdf',
+                tenant_id: '770e8400-e29b-41d4-a716-446655440002',
+                updated_at: '2025-12-17T10:30:00Z',
+                user_id: '660e8400-e29b-41d4-a716-446655440001'
+            }
+        ],
+        extracted_count: 15,
+        failed_count: 1,
+        failed_files: [
+            {
+                error_code: 'INVALID_FILE_TYPE',
+                file_name: 'malware.exe',
+                message: "File type 'application/x-msdownload' is not allowed"
+            }
+        ],
+        skipped_count: 3,
+        skipped_files: [
+            {
+                file_name: '.DS_Store',
+                reason: 'system_file'
+            },
+            {
+                file_name: '__MACOSX/._document.pdf',
+                reason: 'system_file'
+            },
+            {
+                file_name: 'images/',
+                reason: 'directory'
+            }
+        ],
+        total_size_bytes: 52428800
+    }
 } as const;

@@ -63,6 +63,13 @@ export type Body_assets_upload_file = {
     file: (Blob | File);
 };
 
+export type Body_assets_upload_zip = {
+    /**
+     * ZIP archive to upload and extract
+     */
+    file: (Blob | File);
+};
+
 export type Body_auth_login = {
     grant_type?: (string | null);
     username: string;
@@ -79,6 +86,38 @@ export type Body_login_login_access_token = {
     scope?: string;
     client_id?: (string | null);
     client_secret?: (string | null);
+};
+
+/**
+ * Extension to MIME type mapping.
+ */
+export type ExtensionMapping = {
+    /**
+     * File extension (e.g., '.pdf')
+     */
+    extension: string;
+    /**
+     * Allowed MIME types for this extension
+     */
+    mime_types: Array<(string)>;
+};
+
+/**
+ * Information about a file that failed validation during ZIP extraction.
+ */
+export type FailedFileInfo = {
+    /**
+     * Name of the failed file
+     */
+    file_name: string;
+    /**
+     * Machine-readable error code
+     */
+    error_code: string;
+    /**
+     * Human-readable error message
+     */
+    message: string;
 };
 
 /**
@@ -188,6 +227,38 @@ export type SignedURLResponse = {
  * Type of signed URL operation
  */
 export type type = 'download' | 'upload' | 'stream';
+
+/**
+ * Size limit information for a file category.
+ */
+export type SizeLimitInfo = {
+    /**
+     * File category (video, image, audio, default)
+     */
+    category: string;
+    /**
+     * Maximum file size in bytes
+     */
+    max_size_bytes: number;
+    /**
+     * Human-readable size limit (e.g., '10 GB')
+     */
+    max_size_human: string;
+};
+
+/**
+ * Information about a file skipped during ZIP extraction.
+ */
+export type SkippedFileInfo = {
+    /**
+     * Name of the skipped file
+     */
+    file_name: string;
+    /**
+     * Reason for skipping: system_file, directory, empty_file, path_traversal
+     */
+    reason: string;
+};
 
 /**
  * JSON payload containing access token (legacy, for backward compatibility).
@@ -340,11 +411,86 @@ export type ValidationError = {
     type: string;
 };
 
+/**
+ * Response containing all file validation rules (Story 3.4, AC: #8).
+ *
+ * Use this to:
+ * - Show allowed file types in upload UI
+ * - Validate files before upload attempt
+ * - Display size limits to users
+ * - Build file type filters for file picker
+ */
+export type ValidationRulesResponse = {
+    /**
+     * List of allowed MIME types
+     */
+    allowed_mime_types: Array<(string)>;
+    /**
+     * Size limits per file category
+     */
+    size_limits: Array<SizeLimitInfo>;
+    /**
+     * Extension to MIME type mappings
+     */
+    extension_mappings: Array<ExtensionMapping>;
+    /**
+     * Maximum allowed filename length
+     */
+    max_filename_length: number;
+    /**
+     * Extensions that are always blocked
+     */
+    dangerous_extensions: Array<(string)>;
+};
+
+/**
+ * Response schema for ZIP archive upload (AC: #10).
+ *
+ * Returned on successful ZIP extraction with 201 Created.
+ * Contains counts and details of extracted, skipped, and failed files.
+ */
+export type ZipUploadResponse = {
+    /**
+     * Number of files successfully extracted and uploaded
+     */
+    extracted_count: number;
+    /**
+     * Number of files skipped (system files, directories)
+     */
+    skipped_count: number;
+    /**
+     * Number of files that failed validation
+     */
+    failed_count: number;
+    /**
+     * Total size of all extracted files in bytes
+     */
+    total_size_bytes: number;
+    /**
+     * List of created asset records for extracted files
+     */
+    assets: Array<AssetResponse>;
+    /**
+     * Details of files skipped during extraction
+     */
+    skipped_files: Array<SkippedFileInfo>;
+    /**
+     * Details of files that failed validation
+     */
+    failed_files: Array<FailedFileInfo>;
+};
+
 export type AssetsUploadFileData = {
     formData: Body_assets_upload_file;
 };
 
 export type AssetsUploadFileResponse = (AssetResponse);
+
+export type AssetsUploadZipData = {
+    formData: Body_assets_upload_zip;
+};
+
+export type AssetsUploadZipResponse = (ZipUploadResponse);
 
 export type AuthLoginData = {
     formData: Body_auth_login;
@@ -505,3 +651,5 @@ export type UtilsTestEmailData = {
 export type UtilsTestEmailResponse = (Message);
 
 export type UtilsHealthCheckResponse = (boolean);
+
+export type ValidationGetValidationRulesResponse = (ValidationRulesResponse);

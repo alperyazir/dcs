@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AssetsUploadFileData, AssetsUploadFileResponse, AuthLoginData, AuthLoginResponse, AuthRefreshTokenData, AuthRefreshTokenResponse, HealthHealthCheckResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SignedUrlsGetDownloadUrlData, SignedUrlsGetDownloadUrlResponse, SignedUrlsGetStreamUrlData, SignedUrlsGetStreamUrlResponse, SignedUrlsGetUploadUrlData, SignedUrlsGetUploadUrlResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AssetsUploadFileData, AssetsUploadFileResponse, AssetsUploadZipData, AssetsUploadZipResponse, AuthLoginData, AuthLoginResponse, AuthRefreshTokenData, AuthRefreshTokenResponse, HealthHealthCheckResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SignedUrlsGetDownloadUrlData, SignedUrlsGetDownloadUrlResponse, SignedUrlsGetStreamUrlData, SignedUrlsGetStreamUrlResponse, SignedUrlsGetUploadUrlData, SignedUrlsGetUploadUrlResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse, ValidationGetValidationRulesResponse } from './types.gen';
 
 export class AssetsService {
     /**
@@ -44,6 +44,57 @@ export class AssetsService {
             errors: {
                 400: 'Validation error (invalid type or size)',
                 401: 'Not authenticated',
+                422: 'Validation Error',
+                429: 'Rate limit exceeded'
+            }
+        });
+    }
+    
+    /**
+     * Upload and extract a ZIP archive
+     * Upload a ZIP archive and extract its contents to user's storage area.
+     *
+     * **Authorization:** Only publishers and teachers can upload ZIP archives (AC: #2).
+     *
+     * **Process:**
+     * 1. Validates user role (publisher/teacher only)
+     * 2. Validates ZIP file format and size
+     * 3. Extracts contents with streaming (no full memory buffering)
+     * 4. Filters system files (.DS_Store, __MACOSX/, etc.) (AC: #4)
+     * 5. Validates each extracted file (MIME type, size)
+     * 6. Uploads valid files to MinIO preserving folder structure (AC: #7)
+     * 7. Creates asset metadata for each extracted file (AC: #8)
+     * 8. Creates audit log entries (AC: #11)
+     *
+     * **ZIP Limits:**
+     * - Maximum ZIP file size: 10GB
+     * - Maximum extracted files: 1000
+     * - Maximum total extracted size: 50GB
+     *
+     * **Returns:**
+     * - 201 Created with extraction results on success
+     * - 400 Bad Request with INVALID_ZIP_FILE if ZIP is corrupt (AC: #13)
+     * - 400 Bad Request with ZIP_BOMB_DETECTED if zip bomb suspected
+     * - 401 Unauthorized if not authenticated
+     * - 403 Forbidden if user role not authorized (AC: #14)
+     * - 413 Request Entity Too Large if ZIP exceeds size limit
+     * - 429 Too Many Requests if rate limit exceeded
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns ZipUploadResponse ZIP extracted successfully
+     * @throws ApiError
+     */
+    public static uploadZip(data: AssetsUploadZipData): CancelablePromise<AssetsUploadZipResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assets/upload-zip',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                400: 'Invalid ZIP file or zip bomb detected',
+                401: 'Not authenticated',
+                403: 'User role not authorized for ZIP uploads',
+                413: 'ZIP file too large',
                 422: 'Validation Error',
                 429: 'Rate limit exceeded'
             }
@@ -770,6 +821,38 @@ export class UtilsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/utils/health-check/'
+        });
+    }
+}
+
+export class ValidationService {
+    /**
+     * Get file validation rules
+     * Returns the current file validation rules for client-side pre-validation.
+     *
+     * **Use this endpoint to:**
+     * - Show allowed file types in upload UI
+     * - Validate files before upload attempt (reduce failed uploads)
+     * - Display size limits to users
+     * - Build file type filters for file picker dialogs
+     * - Show blocked file extensions
+     *
+     * **This endpoint does NOT require authentication** - validation rules
+     * are public information needed by the frontend.
+     *
+     * **Response includes:**
+     * - `allowed_mime_types`: List of MIME types accepted by the server
+     * - `size_limits`: Maximum file size per category (video, image, audio, default)
+     * - `extension_mappings`: Which extensions map to which MIME types
+     * - `max_filename_length`: Maximum allowed filename length
+     * - `dangerous_extensions`: Extensions that are always blocked for security
+     * @returns ValidationRulesResponse Validation rules returned successfully
+     * @throws ApiError
+     */
+    public static getValidationRules(): CancelablePromise<ValidationGetValidationRulesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/upload/validation-rules'
         });
     }
 }
