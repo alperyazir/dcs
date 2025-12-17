@@ -97,6 +97,99 @@ Returned on successful upload with 201 Created.`,
     }
 } as const;
 
+export const BatchDownloadRequestSchema = {
+    properties: {
+        asset_ids: {
+            items: {
+                type: 'string',
+                format: 'uuid'
+            },
+            type: 'array',
+            maxItems: 100,
+            minItems: 1,
+            title: 'Asset Ids',
+            description: 'List of asset IDs to include in batch download (1-100 assets)',
+            examples: [['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002']]
+        }
+    },
+    type: 'object',
+    required: ['asset_ids'],
+    title: 'BatchDownloadRequest',
+    description: `Request schema for batch download endpoint (AC: #1, #11, #12).
+
+Validates:
+- Non-empty asset list (min 1)
+- Maximum 100 assets per request
+- No duplicate asset IDs
+
+References:
+    - Task 2.2: Request schema with validation
+    - AC: #11 (empty list), #12 (too many assets)`,
+    example: {
+        asset_ids: ['550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440003']
+    }
+} as const;
+
+export const BatchDownloadResponseSchema = {
+    properties: {
+        download_url: {
+            type: 'string',
+            title: 'Download Url',
+            description: 'Presigned URL to download the generated ZIP file'
+        },
+        expires_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Expires At',
+            description: 'URL and ZIP file expiration time (1 hour from creation)'
+        },
+        file_name: {
+            type: 'string',
+            title: 'File Name',
+            description: 'Generated ZIP file name'
+        },
+        file_count: {
+            type: 'integer',
+            minimum: 1,
+            title: 'File Count',
+            description: 'Number of files included in the ZIP'
+        },
+        total_size_bytes: {
+            type: 'integer',
+            minimum: 0,
+            title: 'Total Size Bytes',
+            description: 'Total size of all files before compression'
+        },
+        compressed_size_bytes: {
+            type: 'integer',
+            minimum: 0,
+            title: 'Compressed Size Bytes',
+            description: 'Size of the ZIP file'
+        }
+    },
+    type: 'object',
+    required: ['download_url', 'expires_at', 'file_name', 'file_count', 'total_size_bytes', 'compressed_size_bytes'],
+    title: 'BatchDownloadResponse',
+    description: `Response schema for batch download endpoint (AC: #4).
+
+Contains:
+- Presigned download URL for the generated ZIP
+- Expiration time (1 hour, AC: #5, #8)
+- File metadata (count, sizes)
+
+References:
+    - Task 2.3: Response schema
+    - AC: #4 (download URL), #5 (expiry)`,
+    example: {
+        compressed_size_bytes: 41943040,
+        download_url: 'https://minio.example.com/assets/temp/batch-downloads/batch-download-20251217-100000-abc123.zip?...',
+        expires_at: '2025-12-17T12:00:00Z',
+        file_count: 3,
+        file_name: 'batch-download-20251217-100000-abc123.zip',
+        total_size_bytes: 52428800
+    }
+} as const;
+
 export const Body_assets_upload_fileSchema = {
     properties: {
         file: {
@@ -219,6 +312,59 @@ export const Body_login_login_access_tokenSchema = {
     type: 'object',
     required: ['username', 'password'],
     title: 'Body_login-login_access_token'
+} as const;
+
+export const DownloadResponseSchema = {
+    properties: {
+        download_url: {
+            type: 'string',
+            title: 'Download Url',
+            description: 'Presigned URL for direct MinIO download (1-hour TTL)',
+            example: 'https://minio.example.com/assets/...?X-Amz-Signature=...'
+        },
+        expires_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Expires At',
+            description: 'URL expiration time in ISO-8601 format',
+            example: '2025-12-17T12:00:00Z'
+        },
+        file_name: {
+            type: 'string',
+            title: 'File Name',
+            description: 'Original file name',
+            example: 'document.pdf'
+        },
+        file_size: {
+            type: 'integer',
+            title: 'File Size',
+            description: 'File size in bytes',
+            example: 1234567
+        },
+        mime_type: {
+            type: 'string',
+            title: 'Mime Type',
+            description: 'MIME type of the file',
+            example: 'application/pdf'
+        }
+    },
+    type: 'object',
+    required: ['download_url', 'expires_at', 'file_name', 'file_size', 'mime_type'],
+    title: 'DownloadResponse',
+    description: `Response schema for asset download endpoint.
+
+Returns presigned download URL with complete file metadata.
+
+References:
+- AC: #3 (enhanced download response)
+- Task 2.2 (schema fields)`,
+    example: {
+        download_url: 'https://minio.example.com/assets/uuid/file.pdf?X-Amz-Algorithm=...',
+        expires_at: '2025-12-17T12:00:00Z',
+        file_name: 'document.pdf',
+        file_size: 1234567,
+        mime_type: 'application/pdf'
+    }
 } as const;
 
 export const HTTPValidationErrorSchema = {
@@ -413,6 +559,117 @@ export const NewPasswordSchema = {
     description: 'Properties for password reset.'
 } as const;
 
+export const PreviewResponseSchema = {
+    properties: {
+        preview_url: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Preview Url',
+            description: 'Presigned URL for preview (null for unsupported types)',
+            examples: ['https://minio.example.com/assets/photo.jpg?signature=abc123']
+        },
+        preview_type: {
+            '$ref': '#/components/schemas/PreviewType',
+            description: 'Type of preview: image, video, audio, pdf, document, unsupported',
+            examples: ['image']
+        },
+        expires_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Expires At',
+            description: 'URL expiration time (ISO-8601, null for unsupported types)',
+            examples: ['2025-12-18T12:00:00Z']
+        },
+        mime_type: {
+            type: 'string',
+            title: 'Mime Type',
+            description: 'Original MIME type of the asset',
+            examples: ['image/jpeg']
+        },
+        file_name: {
+            type: 'string',
+            title: 'File Name',
+            description: 'Original file name',
+            examples: ['photo.jpg']
+        },
+        file_size: {
+            type: 'integer',
+            minimum: 0,
+            title: 'File Size',
+            description: 'File size in bytes',
+            examples: [1234567]
+        },
+        supports_inline: {
+            type: 'boolean',
+            title: 'Supports Inline',
+            description: 'Whether the asset can be previewed inline in browser',
+            examples: [true]
+        }
+    },
+    type: 'object',
+    required: ['preview_type', 'mime_type', 'file_name', 'file_size', 'supports_inline'],
+    title: 'PreviewResponse',
+    description: `Response schema for asset preview endpoint (AC: #1, #8, #9).
+
+Returns a presigned URL appropriate for inline preview based on asset type.
+For unsupported types, returns null URL with file metadata only.
+
+Attributes:
+    preview_url: Presigned URL for preview (null for unsupported types)
+    preview_type: Type of preview (image, video, audio, pdf, document, unsupported)
+    expires_at: URL expiration timestamp (null for unsupported types)
+    mime_type: Original MIME type of the asset
+    file_name: Original file name
+    file_size: File size in bytes
+    supports_inline: Whether the asset can be previewed inline in browser`,
+    examples: [
+        {
+            expires_at: '2025-12-18T12:00:00Z',
+            file_name: 'photo.jpg',
+            file_size: 1234567,
+            mime_type: 'image/jpeg',
+            preview_type: 'image',
+            preview_url: 'https://minio.example.com/assets/photo.jpg?signature=abc123',
+            supports_inline: true
+        },
+        {
+            file_name: 'archive.zip',
+            file_size: 9876543,
+            mime_type: 'application/zip',
+            preview_type: 'unsupported',
+            supports_inline: false
+        }
+    ]
+} as const;
+
+export const PreviewTypeSchema = {
+    type: 'string',
+    enum: ['image', 'video', 'audio', 'pdf', 'document', 'unsupported'],
+    title: 'PreviewType',
+    description: `Types of asset previews supported.
+
+Determines how the frontend should render the preview:
+- image: Display in <img> tag
+- video: Display in <video> tag with controls
+- audio: Display in <audio> tag with controls
+- pdf: Display in <iframe> or PDF.js viewer
+- document: Display in code/text viewer
+- unsupported: No inline preview, download only`
+} as const;
+
 export const PrivateUserCreateSchema = {
     properties: {
         email: {
@@ -481,6 +738,68 @@ Returned when a presigned URL is successfully generated.`,
         expires_at: '2025-12-17T12:00:00Z',
         type: 'download',
         url: 'http://minio:9000/assets/publisher/tenant-id/asset-id/file.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...'
+    }
+} as const;
+
+export const StreamingURLResponseSchema = {
+    properties: {
+        stream_url: {
+            type: 'string',
+            title: 'Stream Url',
+            description: 'Presigned URL for MinIO streaming (supports HTTP Range requests)'
+        },
+        expires_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Expires At',
+            description: 'URL expiration time (ISO-8601)'
+        },
+        mime_type: {
+            type: 'string',
+            title: 'Mime Type',
+            description: 'Content MIME type (video/* or audio/*)'
+        },
+        file_size: {
+            type: 'integer',
+            title: 'File Size',
+            description: 'Total file size in bytes'
+        },
+        file_name: {
+            type: 'string',
+            title: 'File Name',
+            description: 'Original file name'
+        },
+        duration_seconds: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Duration Seconds',
+            description: 'Media duration in seconds (if available in metadata)'
+        }
+    },
+    type: 'object',
+    required: ['stream_url', 'expires_at', 'mime_type', 'file_size', 'file_name'],
+    title: 'StreamingURLResponse',
+    description: `Response schema for streaming endpoint.
+
+Returns presigned URL for video/audio streaming with HTTP Range support.
+URL is valid for 1 hour (PRESIGNED_URL_STREAM_EXPIRES_SECONDS).
+
+References:
+- Task 2: Streaming response schema
+- AC: #2, #6 (stream URL with expiration and metadata)`,
+    example: {
+        duration_seconds: 3600,
+        expires_at: '2025-12-18T12:00:00Z',
+        file_name: 'lesson-01.mp4',
+        file_size: 52428800,
+        mime_type: 'video/mp4',
+        stream_url: 'https://minio.example.com/assets/lesson-01.mp4?X-Amz-Algorithm=...'
     }
 } as const;
 

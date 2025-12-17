@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AssetsUploadFileData, AssetsUploadFileResponse, AuthLoginData, AuthLoginResponse, AuthRefreshTokenData, AuthRefreshTokenResponse, HealthHealthCheckResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SignedUrlsGetDownloadUrlData, SignedUrlsGetDownloadUrlResponse, SignedUrlsGetStreamUrlData, SignedUrlsGetStreamUrlResponse, SignedUrlsGetUploadUrlData, SignedUrlsGetUploadUrlResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AssetsUploadFileData, AssetsUploadFileResponse, AuthLoginData, AuthLoginResponse, AuthRefreshTokenData, AuthRefreshTokenResponse, BatchDownloadBatchDownloadAssetsData, BatchDownloadBatchDownloadAssetsResponse, DownloadDownloadAssetData, DownloadDownloadAssetResponse, HealthHealthCheckResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PreviewPreviewAssetData, PreviewPreviewAssetResponse, PrivateCreateUserData, PrivateCreateUserResponse, SignedUrlsGetDownloadUrlData, SignedUrlsGetDownloadUrlResponse, SignedUrlsGetStreamUrlData, SignedUrlsGetStreamUrlResponse, SignedUrlsGetUploadUrlData, SignedUrlsGetUploadUrlResponse, StreamingStreamAssetData, StreamingStreamAssetResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class AssetsService {
     /**
@@ -112,6 +112,131 @@ export class AuthService {
             mediaType: 'application/json',
             errors: {
                 422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class BatchDownloadService {
+    /**
+     * Download multiple assets as ZIP
+     * Download multiple assets as a single ZIP file.
+     *
+     * **Process:**
+     * 1. Validates user has permission for all requested assets (AC: #1)
+     * 2. Generates a ZIP file containing all assets (AC: #2)
+     * 3. Uses streaming to avoid memory buffering (AC: #3)
+     * 4. Uploads ZIP to temporary storage with 1-hour expiry (AC: #5, #8)
+     * 5. Returns presigned download URL (AC: #4, #7)
+     * 6. Creates audit log entry (AC: #6)
+     *
+     * **Request Validation:**
+     * - Minimum 1 asset required (AC: #11)
+     * - Maximum 100 assets per request (AC: #12)
+     * - No duplicate asset IDs allowed
+     * - All assets must exist (AC: #10)
+     * - User must have permission for all assets (AC: #9)
+     *
+     * **ZIP File Details:**
+     * - Files retain original names
+     * - ZIP uses DEFLATE compression
+     * - Stored at: `temp/batch-downloads/{timestamp}-{uuid}.zip`
+     * - Automatically deleted after 1 hour
+     *
+     * **Permissions:**
+     * - Owner can download their own assets
+     * - Admin and Supervisor can download any assets
+     *
+     * **Error Codes:**
+     * - 400 BAD_REQUEST: Empty list or >100 assets (AC: #11, #12)
+     * - 403 PERMISSION_DENIED: Lacks permission for one or more assets (AC: #9)
+     * - 404 ASSET_NOT_FOUND: One or more assets don't exist (AC: #10)
+     * - 429 TOO_MANY_REQUESTS: Rate limit exceeded
+     *
+     * **Example Request:**
+     * ```json
+     * {
+     * "asset_ids": [
+     * "550e8400-e29b-41d4-a716-446655440001",
+     * "550e8400-e29b-41d4-a716-446655440002",
+     * "550e8400-e29b-41d4-a716-446655440003"
+     * ]
+     * }
+     * ```
+     *
+     * **Example Response:**
+     * ```json
+     * {
+     * "download_url": "https://minio.example.com/assets/temp/batch-downloads/...",
+     * "expires_at": "2025-12-18T12:00:00Z",
+     * "file_name": "batch-download-20251218-100000-abc123.zip",
+     * "file_count": 3,
+     * "total_size_bytes": 10485760,
+     * "compressed_size_bytes": 8388608
+     * }
+     * ```
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns BatchDownloadResponse Successful Response
+     * @throws ApiError
+     */
+    public static batchDownloadAssets(data: BatchDownloadBatchDownloadAssetsData): CancelablePromise<BatchDownloadBatchDownloadAssetsResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assets/batch-download',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class DownloadService {
+    /**
+     * Download asset via presigned URL
+     * Generate a presigned URL for downloading an asset directly from MinIO.
+     * Returns enhanced response with file metadata (file_name, file_size, mime_type).
+     *
+     * **Authorization:**
+     * - User must own the asset, OR
+     * - User must be Admin/Supervisor (can access any asset)
+     *
+     * **URL Validity:**
+     * - Download URLs are valid for 1 hour (configurable)
+     * - URL uses HMAC-SHA256 signature
+     *
+     * **Direct Download:**
+     * - Client downloads directly from MinIO using the signed URL
+     * - No API proxying - reduces server load (NFR-P4, NFR-P5, NFR-P6)
+     * - Supports HTTP Range requests for resume capability
+     *
+     * **Audit Logging:**
+     * - Creates audit log entry with action="download" (AC: #5)
+     *
+     * **Returns:**
+     * - 200 OK with presigned URL and file metadata
+     * - 403 Forbidden if user lacks permission
+     * - 404 Not Found if asset does not exist
+     * - 429 Too Many Requests if rate limit exceeded
+     * @param data The data for the request.
+     * @param data.assetId
+     * @returns DownloadResponse Presigned download URL with file metadata
+     * @throws ApiError
+     */
+    public static downloadAsset(data: DownloadDownloadAssetData): CancelablePromise<DownloadDownloadAssetResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assets/{asset_id}/download',
+            path: {
+                asset_id: data.assetId
+            },
+            errors: {
+                403: 'Permission denied',
+                404: 'Asset not found',
+                422: 'Validation Error',
+                429: 'Rate limit exceeded'
             }
         });
     }
@@ -356,6 +481,48 @@ export class LoginService {
     }
 }
 
+export class PreviewService {
+    /**
+     * Get asset preview URL
+     * Get a preview URL for an asset based on its type.
+     *
+     * Returns a presigned URL appropriate for inline preview:
+     * - **Images** (JPEG, PNG, GIF, WebP, SVG): Direct URL for `<img>` tag
+     * - **Videos** (MP4, WebM, OGG, QuickTime): URL for `<video>` tag with controls
+     * - **Audio** (MP3, WAV, OGG, AAC): URL for `<audio>` tag with controls
+     * - **PDFs**: URL for iframe or PDF.js viewer
+     * - **Documents** (JSON, Plain Text, HTML, CSS, JS): URL for code/text viewer
+     * - **Unsupported**: Returns null URL with file metadata only
+     *
+     * **Preview URLs:**
+     * - Valid for 1 hour (AC: #8)
+     * - Browser renders content directly from MinIO (zero-proxy architecture)
+     * - HTTP Range support for video/audio seeking
+     *
+     * **Permission:** User must own the asset or be Admin/Supervisor (AC: #10).
+     *
+     * **Error codes:**
+     * - 403 PERMISSION_DENIED: User lacks permission
+     * - 404 ASSET_NOT_FOUND: Asset does not exist
+     * @param data The data for the request.
+     * @param data.assetId
+     * @returns PreviewResponse Successful Response
+     * @throws ApiError
+     */
+    public static previewAsset(data: PreviewPreviewAssetData): CancelablePromise<PreviewPreviewAssetResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assets/{asset_id}/preview',
+            path: {
+                asset_id: data.assetId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class PrivateService {
     /**
      * Create User
@@ -501,6 +668,48 @@ export class SignedUrlsService {
                 400: 'Validation error',
                 422: 'Validation Error',
                 429: 'Rate limit exceeded'
+            }
+        });
+    }
+}
+
+export class StreamingService {
+    /**
+     * Stream video or audio asset
+     * Stream a video or audio asset via presigned URL with HTTP Range support.
+     *
+     * The returned URL supports HTTP Range requests for seeking and progressive playback.
+     * URL is valid for 1 hour.
+     *
+     * **Supported formats:**
+     * - Video: MP4, WebM, OGG, QuickTime
+     * - Audio: MP3, WAV, OGG, WebM, AAC
+     *
+     * **HTTP Range Support:**
+     * The returned URL supports Range headers for seeking:
+     * - Request: `Range: bytes=1000000-2000000`
+     * - Response: `206 Partial Content` with requested bytes
+     *
+     * **Permission:** User must own the asset or be Admin/Supervisor.
+     *
+     * **Error codes:**
+     * - 400 INVALID_ASSET_TYPE: Asset is not video/audio
+     * - 403 PERMISSION_DENIED: User lacks permission
+     * - 404 ASSET_NOT_FOUND: Asset does not exist
+     * @param data The data for the request.
+     * @param data.assetId
+     * @returns StreamingURLResponse Successful Response
+     * @throws ApiError
+     */
+    public static streamAsset(data: StreamingStreamAssetData): CancelablePromise<StreamingStreamAssetResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assets/{asset_id}/stream',
+            path: {
+                asset_id: data.assetId
+            },
+            errors: {
+                422: 'Validation Error'
             }
         });
     }
