@@ -35,13 +35,21 @@ class TenantType(str, Enum):
 class AuditAction(str, Enum):
     """Actions tracked in audit logs."""
 
+    # Asset actions
     UPLOAD = "upload"
     DOWNLOAD = "download"
     DELETE = "delete"
     RESTORE = "restore"
     UPDATE = "update"
+
+    # Auth actions
     LOGIN = "login"
     LOGOUT = "logout"
+
+    # User management actions (Story 2.5)
+    USER_CREATE = "user_create"
+    USER_UPDATE = "user_update"
+    USER_DELETE = "user_delete"
 
 
 # =============================================================================

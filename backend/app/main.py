@@ -75,16 +75,31 @@ async def http_exception_handler(
     """Handle HTTP exceptions with request_id in response."""
     request_id = get_request_id(request)
 
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
+    # Check if detail is a structured error (dict with error_code)
+    if isinstance(exc.detail, dict) and "error_code" in exc.detail:
+        # Preserve structured error format (Story 2.5)
+        content = {
+            "detail": exc.detail,  # Keep as structured dict
+            "error_code": exc.detail.get("error_code", f"HTTP_{exc.status_code}"),
+            "message": exc.detail.get("message", str(exc.detail)),
+            "details": exc.detail.get("details"),
+            "request_id": request_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    else:
+        # Backwards compatibility with string details
+        content = {
             "detail": str(exc.detail),  # Backwards compatibility with FastAPI default
             "error_code": f"HTTP_{exc.status_code}",
             "message": str(exc.detail),
             "details": None,
             "request_id": request_id,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-        },
+        }
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=content,
     )
 
 
