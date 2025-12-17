@@ -2,10 +2,14 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     auth,
+    batch_download,
+    download,
     items,
     login,
+    preview,
     private,
     signed_urls,
+    streaming,
     upload,
     users,
     utils,
@@ -20,6 +24,10 @@ api_router.include_router(utils.router)
 api_router.include_router(items.router)
 api_router.include_router(upload.router)  # Story 3.1: Asset upload endpoint
 api_router.include_router(signed_urls.router)  # Story 3.2: Signed URL endpoints
+api_router.include_router(download.router)  # Story 4.1: Asset download endpoint
+api_router.include_router(streaming.router)  # Story 4.2: Asset streaming endpoint
+api_router.include_router(preview.router)  # Story 4.3: Asset preview endpoint
+api_router.include_router(batch_download.router)  # Story 4.4: Batch download endpoint
 
 
 if settings.ENVIRONMENT == "local":

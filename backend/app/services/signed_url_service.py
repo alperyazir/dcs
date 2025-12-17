@@ -181,9 +181,17 @@ class SignedURLService:
             AssetNotFoundError: If asset does not exist (Task 7.5)
             AssetAccessDeniedError: If user lacks permission (Task 7.4)
         """
+        import time
+
+        start_time = time.perf_counter()
+
         # Get asset (Task 7.5 - returns 404 if not found)
         asset = self.asset_repo.get_by_id(asset_id)
         if not asset:
+            raise AssetNotFoundError(asset_id=asset_id, request_id=request_id)
+
+        # Check if asset is soft-deleted (Story 4.1 Code Review Fix #5)
+        if asset.is_deleted:
             raise AssetNotFoundError(asset_id=asset_id, request_id=request_id)
 
         # Check permission (AC: #8)
@@ -205,12 +213,29 @@ class SignedURLService:
             },
         )
 
+        # Calculate timing (Story 4.1, Task 3.4 - NFR-P2: <100ms requirement)
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+
+        # Validate NFR-P2 performance requirement (Story 4.1 Code Review Fix #6)
+        if elapsed_ms > 100:
+            logger.warning(
+                "Download URL generation exceeded NFR-P2 (<100ms)",
+                extra={
+                    "asset_id": str(asset_id),
+                    "user_id": str(self.current_user.id),
+                    "generation_time_ms": round(elapsed_ms, 2),
+                    "nfr_threshold_ms": 100,
+                    "exceeded_by_ms": round(elapsed_ms - 100, 2),
+                },
+            )
+
         logger.info(
             "Download URL generated",
             extra={
                 "asset_id": str(asset_id),
                 "user_id": str(self.current_user.id),
                 "expires_at": expires_at.isoformat(),
+                "generation_time_ms": round(elapsed_ms, 2),
             },
         )
 
@@ -253,10 +278,10 @@ class SignedURLService:
             expires_seconds=settings.PRESIGNED_URL_STREAM_EXPIRES_SECONDS,
         )
 
-        # Audit log
+        # Audit log (Story 4.2, Task 4: Use dedicated STREAM action)
         self._create_audit_log(
             asset_id=asset.id,
-            action=AuditAction.SIGNED_URL_DOWNLOAD,
+            action=AuditAction.STREAM,
             metadata={
                 "url_type": "stream",
                 "mime_type": asset.mime_type,

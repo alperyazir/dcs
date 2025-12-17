@@ -41,6 +41,9 @@ class AuditAction(str, Enum):
     DELETE = "delete"
     RESTORE = "restore"
     UPDATE = "update"
+    STREAM = "stream"  # Story 4.2: Video/audio streaming action
+    PREVIEW = "preview"  # Story 4.3: Asset preview action
+    BATCH_DOWNLOAD = "batch_download"  # Story 4.4: Batch download action
     ASSET_UPLOAD = "asset_upload"  # Story 3.1: Specific asset upload action
 
     # Signed URL actions (Story 3.2)

@@ -59,18 +59,18 @@ development_status:
   2-5-implement-user-management-endpoints-for-admin-supervisor: done
   epic-2-retrospective: optional
 
-  epic-3: in-progress
+  epic-3: done
   3-1-implement-single-file-upload-with-progress-tracking: done
-  3-2-generate-time-limited-signed-urls-for-direct-minio-access: review
-  3-3-implement-zip-archive-upload-with-streaming-extraction: backlog
-  3-4-implement-file-type-and-size-validation: backlog
+  3-2-generate-time-limited-signed-urls-for-direct-minio-access: done
+  3-3-implement-zip-archive-upload-with-streaming-extraction: done
+  3-4-implement-file-type-and-size-validation: done
   epic-3-retrospective: optional
 
-  epic-4: backlog
-  4-1-implement-asset-download-with-signed-urls: backlog
-  4-2-implement-video-and-audio-streaming-with-http-range-support: backlog
-  4-3-implement-asset-preview-endpoints: backlog
-  4-4-implement-batch-download-for-multiple-assets: backlog
+  epic-4: done
+  4-1-implement-asset-download-with-signed-urls: done
+  4-2-implement-video-and-audio-streaming-with-http-range-support: done
+  4-3-implement-asset-preview-endpoints: done
+  4-4-implement-batch-download-for-multiple-assets: done
   epic-4-retrospective: optional
 
   epic-5: backlog
