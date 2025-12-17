@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AssetsUploadFileData, AssetsUploadFileResponse, AuthLoginData, AuthLoginResponse, AuthRefreshTokenData, AuthRefreshTokenResponse, HealthHealthCheckResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AssetsUploadFileData, AssetsUploadFileResponse, AuthLoginData, AuthLoginResponse, AuthRefreshTokenData, AuthRefreshTokenResponse, HealthHealthCheckResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, SignedUrlsGetDownloadUrlData, SignedUrlsGetDownloadUrlResponse, SignedUrlsGetStreamUrlData, SignedUrlsGetStreamUrlResponse, SignedUrlsGetUploadUrlData, SignedUrlsGetUploadUrlResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class AssetsService {
     /**
@@ -373,6 +373,134 @@ export class PrivateService {
             mediaType: 'application/json',
             errors: {
                 422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class SignedUrlsService {
+    /**
+     * Generate presigned download URL
+     * Generate a presigned URL for downloading an asset directly from MinIO.
+     *
+     * **Authorization:**
+     * - User must own the asset, OR
+     * - User must be Admin/Supervisor (can access any asset)
+     *
+     * **URL Validity:**
+     * - Download URLs are valid for 1 hour (configurable)
+     * - URL uses HMAC-SHA256 signature
+     *
+     * **Direct Download:**
+     * - Client downloads directly from MinIO using the signed URL
+     * - No API proxying - reduces server load (NFR-P4, NFR-P5, NFR-P6)
+     *
+     * **Returns:**
+     * - 200 OK with presigned URL and expiration timestamp
+     * - 403 Forbidden if user lacks permission
+     * - 404 Not Found if asset does not exist
+     * - 429 Too Many Requests if rate limit exceeded
+     * @param data The data for the request.
+     * @param data.assetId
+     * @returns SignedURLResponse Presigned URL generated successfully
+     * @throws ApiError
+     */
+    public static getDownloadUrl(data: SignedUrlsGetDownloadUrlData): CancelablePromise<SignedUrlsGetDownloadUrlResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assets/{asset_id}/download-url',
+            path: {
+                asset_id: data.assetId
+            },
+            errors: {
+                403: 'Permission denied',
+                404: 'Asset not found',
+                422: 'Validation Error',
+                429: 'Rate limit exceeded'
+            }
+        });
+    }
+    
+    /**
+     * Generate presigned stream URL
+     * Generate a presigned URL for streaming video/audio assets directly from MinIO.
+     *
+     * **Use Case:**
+     * - Video players with seek support (HTTP Range requests)
+     * - Audio streaming
+     * - Progressive download for large media files
+     *
+     * **Authorization:**
+     * - User must own the asset, OR
+     * - User must be Admin/Supervisor (can access any asset)
+     *
+     * **URL Validity:**
+     * - Stream URLs are valid for 1 hour (configurable)
+     * - URL supports HTTP Range requests for seeking
+     *
+     * **Returns:**
+     * - 200 OK with presigned URL and expiration timestamp
+     * - 403 Forbidden if user lacks permission
+     * - 404 Not Found if asset does not exist
+     * @param data The data for the request.
+     * @param data.assetId
+     * @returns SignedURLResponse Presigned stream URL generated successfully
+     * @throws ApiError
+     */
+    public static getStreamUrl(data: SignedUrlsGetStreamUrlData): CancelablePromise<SignedUrlsGetStreamUrlResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assets/{asset_id}/stream-url',
+            path: {
+                asset_id: data.assetId
+            },
+            errors: {
+                403: 'Permission denied',
+                404: 'Asset not found',
+                422: 'Validation Error',
+                429: 'Rate limit exceeded'
+            }
+        });
+    }
+    
+    /**
+     * Generate presigned upload URL
+     * Generate a presigned URL for uploading a new asset directly to MinIO.
+     *
+     * **Workflow:**
+     * 1. Client requests upload URL with file metadata
+     * 2. Server validates file type and generates presigned PUT URL
+     * 3. Server pre-generates asset ID and object key
+     * 4. Client uploads directly to MinIO using the signed URL
+     * 5. (Future) Client confirms upload to create asset metadata
+     *
+     * **Validation:**
+     * - MIME type must be in allowed whitelist
+     * - File name must be valid (no path traversal)
+     *
+     * **URL Validity:**
+     * - Upload URLs are valid for 15 minutes (short for security)
+     * - URL allows single PUT request
+     *
+     * **Returns:**
+     * - 200 OK with presigned URL, expiration, asset_id, and object_key
+     * - 400 Bad Request if file type not allowed or filename invalid
+     * - 429 Too Many Requests if rate limit exceeded
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns UploadURLResponse Presigned upload URL generated successfully
+     * @throws ApiError
+     */
+    public static getUploadUrl(data: SignedUrlsGetUploadUrlData): CancelablePromise<SignedUrlsGetUploadUrlResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assets/upload-url',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                400: 'Validation error',
+                422: 'Validation Error',
+                429: 'Rate limit exceeded'
             }
         });
     }

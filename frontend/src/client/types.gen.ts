@@ -165,6 +165,31 @@ export type RefreshTokenRequest = {
 };
 
 /**
+ * Response schema for signed URL generation (AC: #9).
+ *
+ * Returned when a presigned URL is successfully generated.
+ */
+export type SignedURLResponse = {
+    /**
+     * Presigned URL for direct MinIO access
+     */
+    url: string;
+    /**
+     * URL expiration time (ISO-8601)
+     */
+    expires_at: string;
+    /**
+     * Type of signed URL operation
+     */
+    type: 'download' | 'upload' | 'stream';
+};
+
+/**
+ * Type of signed URL operation
+ */
+export type type = 'download' | 'upload' | 'stream';
+
+/**
  * JSON payload containing access token (legacy, for backward compatibility).
  */
 export type Token = {
@@ -188,6 +213,54 @@ export type TokenResponse = {
 export type UpdatePassword = {
     current_password: string;
     new_password: string;
+};
+
+/**
+ * Request schema for presigned upload URL generation.
+ *
+ * Validates file_name and mime_type before generating upload URL.
+ */
+export type UploadURLRequest = {
+    /**
+     * Name of the file to upload
+     */
+    file_name: string;
+    /**
+     * MIME type of the file
+     */
+    mime_type: string;
+    /**
+     * Size of the file in bytes
+     */
+    file_size: number;
+};
+
+/**
+ * Response schema for presigned upload URL generation.
+ *
+ * Includes the upload URL, expiration, and the asset_id for the new asset.
+ */
+export type UploadURLResponse = {
+    /**
+     * Presigned URL for direct MinIO upload
+     */
+    url: string;
+    /**
+     * URL expiration time (ISO-8601)
+     */
+    expires_at: string;
+    /**
+     * URL type
+     */
+    type?: "upload";
+    /**
+     * Pre-generated asset ID for the upload
+     */
+    asset_id: string;
+    /**
+     * MinIO object key where file will be stored
+     */
+    object_key: string;
 };
 
 /**
@@ -350,6 +423,24 @@ export type PrivateCreateUserData = {
 };
 
 export type PrivateCreateUserResponse = (UserPublic);
+
+export type SignedUrlsGetDownloadUrlData = {
+    assetId: string;
+};
+
+export type SignedUrlsGetDownloadUrlResponse = (SignedURLResponse);
+
+export type SignedUrlsGetStreamUrlData = {
+    assetId: string;
+};
+
+export type SignedUrlsGetStreamUrlResponse = (SignedURLResponse);
+
+export type SignedUrlsGetUploadUrlData = {
+    requestBody: UploadURLRequest;
+};
+
+export type SignedUrlsGetUploadUrlResponse = (UploadURLResponse);
 
 export type UsersReadUsersData = {
     limit?: number;

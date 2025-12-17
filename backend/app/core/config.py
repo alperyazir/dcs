@@ -132,6 +132,14 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE_IMAGE: int = 500 * 1024 * 1024  # 500MB
     MAX_FILE_SIZE_DEFAULT: int = 5 * 1024 * 1024 * 1024  # 5GB
 
+    # Presigned URL Configuration (Story 3.2)
+    # Upload URLs: 15 minutes TTL for security (AC: #2)
+    PRESIGNED_URL_UPLOAD_EXPIRES_SECONDS: int = 900
+    # Download URLs: 1 hour TTL for classroom usage (AC: #3)
+    PRESIGNED_URL_DOWNLOAD_EXPIRES_SECONDS: int = 3600
+    # Stream URLs: 1 hour TTL for video/audio streaming (same as download)
+    PRESIGNED_URL_STREAM_EXPIRES_SECONDS: int = 3600
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def minio_secure(self) -> bool:

@@ -43,6 +43,10 @@ class AuditAction(str, Enum):
     UPDATE = "update"
     ASSET_UPLOAD = "asset_upload"  # Story 3.1: Specific asset upload action
 
+    # Signed URL actions (Story 3.2)
+    SIGNED_URL_DOWNLOAD = "signed_url_download"
+    SIGNED_URL_UPLOAD = "signed_url_upload"
+
     # Auth actions
     LOGIN = "login"
     LOGOUT = "logout"

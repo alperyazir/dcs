@@ -451,6 +451,39 @@ export const RefreshTokenRequestSchema = {
     description: 'Request body for token refresh endpoint (AC: #7).'
 } as const;
 
+export const SignedURLResponseSchema = {
+    properties: {
+        url: {
+            type: 'string',
+            title: 'Url',
+            description: 'Presigned URL for direct MinIO access'
+        },
+        expires_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Expires At',
+            description: 'URL expiration time (ISO-8601)'
+        },
+        type: {
+            type: 'string',
+            enum: ['download', 'upload', 'stream'],
+            title: 'Type',
+            description: 'Type of signed URL operation'
+        }
+    },
+    type: 'object',
+    required: ['url', 'expires_at', 'type'],
+    title: 'SignedURLResponse',
+    description: `Response schema for signed URL generation (AC: #9).
+
+Returned when a presigned URL is successfully generated.`,
+    example: {
+        expires_at: '2025-12-17T12:00:00Z',
+        type: 'download',
+        url: 'http://minio:9000/assets/publisher/tenant-id/asset-id/file.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...'
+    }
+} as const;
+
 export const TokenSchema = {
     properties: {
         access_token: {
@@ -514,6 +547,87 @@ export const UpdatePasswordSchema = {
     required: ['current_password', 'new_password'],
     title: 'UpdatePassword',
     description: 'Properties for password update.'
+} as const;
+
+export const UploadURLRequestSchema = {
+    properties: {
+        file_name: {
+            type: 'string',
+            maxLength: 255,
+            title: 'File Name',
+            description: 'Name of the file to upload'
+        },
+        mime_type: {
+            type: 'string',
+            maxLength: 127,
+            title: 'Mime Type',
+            description: 'MIME type of the file'
+        },
+        file_size: {
+            type: 'integer',
+            exclusiveMinimum: 0,
+            title: 'File Size',
+            description: 'Size of the file in bytes'
+        }
+    },
+    type: 'object',
+    required: ['file_name', 'mime_type', 'file_size'],
+    title: 'UploadURLRequest',
+    description: `Request schema for presigned upload URL generation.
+
+Validates file_name and mime_type before generating upload URL.`,
+    example: {
+        file_name: 'textbook.pdf',
+        file_size: 15728640,
+        mime_type: 'application/pdf'
+    }
+} as const;
+
+export const UploadURLResponseSchema = {
+    properties: {
+        url: {
+            type: 'string',
+            title: 'Url',
+            description: 'Presigned URL for direct MinIO upload'
+        },
+        expires_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Expires At',
+            description: 'URL expiration time (ISO-8601)'
+        },
+        type: {
+            type: 'string',
+            const: 'upload',
+            title: 'Type',
+            description: 'URL type',
+            default: 'upload'
+        },
+        asset_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Asset Id',
+            description: 'Pre-generated asset ID for the upload'
+        },
+        object_key: {
+            type: 'string',
+            title: 'Object Key',
+            description: 'MinIO object key where file will be stored'
+        }
+    },
+    type: 'object',
+    required: ['url', 'expires_at', 'asset_id', 'object_key'],
+    title: 'UploadURLResponse',
+    description: `Response schema for presigned upload URL generation.
+
+Includes the upload URL, expiration, and the asset_id for the new asset.`,
+    example: {
+        asset_id: '550e8400-e29b-41d4-a716-446655440000',
+        expires_at: '2025-12-17T10:15:00Z',
+        object_key: 'publisher/tenant-id/asset-id/file.pdf',
+        type: 'upload',
+        url: 'http://minio:9000/assets/publisher/tenant-id/asset-id/file.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...'
+    }
 } as const;
 
 export const UserCreateSchema = {
