@@ -3,7 +3,53 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { AuthLoginData, AuthLoginResponse, AuthRefreshTokenData, AuthRefreshTokenResponse, HealthHealthCheckResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AssetsUploadFileData, AssetsUploadFileResponse, AuthLoginData, AuthLoginResponse, AuthRefreshTokenData, AuthRefreshTokenResponse, HealthHealthCheckResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class AssetsService {
+    /**
+     * Upload a single file
+     * Upload a single file to user's storage area.
+     *
+     * **Validation:**
+     * - MIME type must be in allowed whitelist (AC: #2)
+     * - File size must not exceed type-specific limits (AC: #1)
+     * - Videos: 10GB max
+     * - Images: 500MB max
+     * - Other: 5GB max
+     *
+     * **Process:**
+     * 1. Validates file type and size
+     * 2. Uploads to MinIO with streaming (no full memory buffering)
+     * 3. Calculates MD5 checksum during upload
+     * 4. Creates asset metadata in PostgreSQL
+     * 5. Creates audit log entry
+     *
+     * **Returns:**
+     * - 201 Created with asset metadata on success
+     * - 400 Bad Request with INVALID_FILE_TYPE if MIME type not allowed
+     * - 400 Bad Request with FILE_TOO_LARGE if size exceeds limit
+     * - 401 Unauthorized if not authenticated
+     * - 429 Too Many Requests if rate limit exceeded
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns AssetResponse File uploaded successfully
+     * @throws ApiError
+     */
+    public static uploadFile(data: AssetsUploadFileData): CancelablePromise<AssetsUploadFileResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assets/upload',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                400: 'Validation error (invalid type or size)',
+                401: 'Not authenticated',
+                422: 'Validation Error',
+                429: 'Rate limit exceeded'
+            }
+        });
+    }
+}
 
 export class AuthService {
     /**

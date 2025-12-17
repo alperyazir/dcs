@@ -305,3 +305,28 @@ class AssetRepository(TenantAwareRepository[Asset]):
 
         statement = self._apply_tenant_filter(statement)
         return self.session.exec(statement).one()
+
+    def get_by_object_key(
+        self,
+        bucket: str,
+        object_key: str,
+    ) -> Asset | None:
+        """
+        Get asset by MinIO object key (Story 3.1, Task 5.4).
+
+        Used for download API to lookup asset by MinIO path.
+
+        Args:
+            bucket: MinIO bucket name
+            object_key: Full object key (path in bucket)
+
+        Returns:
+            Asset if found and user has access, None otherwise.
+        """
+        statement = select(Asset).where(
+            Asset.bucket == bucket,
+            Asset.object_key == object_key,
+            Asset.is_deleted == False,  # noqa: E712
+        )
+        statement = self._apply_tenant_filter(statement)
+        return self.session.exec(statement).first()

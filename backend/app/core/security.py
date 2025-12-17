@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import jwt
 from passlib.context import CryptContext
@@ -42,6 +42,7 @@ def create_access_token(
         "exp": expire,
         "iat": now,
         "type": "access",
+        "jti": str(uuid4()),  # Unique token ID for rotation support
     }
 
     encoded_jwt = jwt.encode(
@@ -74,6 +75,7 @@ def create_refresh_token(
         "exp": expire,
         "iat": now,
         "type": "refresh",
+        "jti": str(uuid4()),  # Unique token ID for rotation support
     }
 
     encoded_jwt = jwt.encode(

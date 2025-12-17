@@ -233,20 +233,21 @@ class TestTokenRefresh:
         self, client: TestClient, test_user: User
     ) -> None:
         """Using access token as refresh token should fail."""
-        # Login to get access token
-        login_response = client.post(
-            f"{settings.API_V1_STR}/auth/login",
-            data={
-                "username": test_user.email,
-                "password": "testpassword123",
-            },
+        # Create access token directly (avoids rate limiter)
+        effective_tenant_id = (
+            test_user.tenant_id if test_user.tenant_id else test_user.id
         )
-        tokens = login_response.json()
+        access_token = create_access_token(
+            user_id=test_user.id,
+            email=test_user.email,
+            role=test_user.role.value,
+            tenant_id=effective_tenant_id,
+        )
 
         # Try to use access token as refresh token
         response = client.post(
             f"{settings.API_V1_STR}/auth/refresh",
-            json={"refresh_token": tokens["access_token"]},
+            json={"refresh_token": access_token},
         )
         assert response.status_code == 401
 
@@ -310,7 +311,8 @@ class TestRS256Algorithm:
         assert payload["sub"] == str(test_user.id)
 
         # Verify with wrong key should fail
-        with pytest.raises(jwt.InvalidSignatureError):
+        # InvalidKeyError is raised for improperly formatted keys
+        with pytest.raises((jwt.InvalidSignatureError, jwt.exceptions.InvalidKeyError)):
             jwt.decode(
                 token,
                 "wrong_public_key",

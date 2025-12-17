@@ -41,6 +41,7 @@ class AuditAction(str, Enum):
     DELETE = "delete"
     RESTORE = "restore"
     UPDATE = "update"
+    ASSET_UPLOAD = "asset_upload"  # Story 3.1: Specific asset upload action
 
     # Auth actions
     LOGIN = "login"
