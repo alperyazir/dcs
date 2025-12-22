@@ -1,5 +1,5 @@
 # Stage 1: Dependencies
-FROM python:3.12-slim AS deps
+FROM python:3.14-slim AS deps
 
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app/
@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
 
 # Stage 2: Production
-FROM python:3.12-slim AS production
+FROM python:3.14-slim AS production
 
 # Install curl for health check
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
